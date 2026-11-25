@@ -53,9 +53,9 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -63,6 +63,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class SubmissionUploadsTest {
@@ -117,7 +118,8 @@ class SubmissionUploadsTest {
             resolver,
             transactionManager,
             new SubmissionIntake(goLiveRules, heldSubmissions, submissionRepository),
-            storedSubmissionGuard);
+            storedSubmissionGuard,
+            submissionRepository);
 
         templateContext = mock(TemplateVersionContext.class);
         template = mock(DataTemplateInstanceDto.class);
@@ -148,12 +150,14 @@ class SubmissionUploadsTest {
         when(user.isSuper()).thenReturn(true);
         when(user.getId()).thenReturn(USER_ID);
 
+        // As the persistence layer answers: created without a stored submission, else updated.
         doAnswer(invocation -> {
-            List<DataSubmission> saved = invocation.getArgument(0);
-            EntitySaveSummaryVM summary = invocation.getArgument(1);
-            saved.forEach(submission -> summary.getCreated().add(submission.getUid()));
-            return saved;
-        }).when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
+            DataSubmission saved = invocation.getArgument(0);
+            EntitySaveSummaryVM summary = invocation.getArgument(2);
+            (invocation.getArgument(1) == null ? summary.getCreated() : summary.getUpdated()).add(saved.getUid());
+            return null;
+        }).when(submissionService).upsert(any(DataSubmission.class), any(), any(EntitySaveSummaryVM.class),
+            any(RevisionContext.class));
     }
 
     @Test
@@ -163,7 +167,7 @@ class SubmissionUploadsTest {
 
         EntitySaveSummaryVM summary = upload(List.of(firstRequest, secondRequest));
 
-        verify(submissionService, times(2)).upsertAll(anyList(), any(EntitySaveSummaryVM.class),
+        verify(submissionService, times(2)).upsert(any(DataSubmission.class), any(), any(EntitySaveSummaryVM.class),
             eq(RevisionContext.upload(USER_ID)));
         ArgumentCaptor<TransactionDefinition> definitions =
             ArgumentCaptor.forClass(TransactionDefinition.class);
@@ -185,8 +189,8 @@ class SubmissionUploadsTest {
             upload(List.of(firstRequest, secondRequest), true);
 
         verify(resolver, times(2)).resolve(any(), eq(assignment), eq(template), any());
-        verify(submissionService, times(2)).upsertAll(
-            anyList(), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
+        verify(submissionService, times(2)).upsert(
+            any(DataSubmission.class), any(), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
         verify(transactionStatus, times(2)).setRollbackOnly();
         verify(heldSubmissions).hold(eq("firstSub01"), eq(HoldReason.PRACTICE), eq(null), any(), any());
         verify(heldSubmissions).hold(eq("secondSub1"), eq(HoldReason.PRACTICE), eq(null), any(), any());
@@ -201,7 +205,8 @@ class SubmissionUploadsTest {
 
         EntitySaveSummaryVM summary = upload(List.of(request));
 
-        verify(submissionService).upsertAll(submissionsWithUids("firstSub01"), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
+        verify(submissionService).upsert(submissionWithUid("firstSub01"), any(), any(EntitySaveSummaryVM.class),
+            any(RevisionContext.class));
         verify(transactionStatus).setRollbackOnly();
         ArgumentCaptor<HeldContext> context = ArgumentCaptor.forClass(HeldContext.class);
         verify(heldSubmissions).hold(eq("firstSub01"), eq(HoldReason.BEFORE_GO_LIVE), eq(rule), context.capture(), any());
@@ -231,13 +236,19 @@ class SubmissionUploadsTest {
         goLiveIn(Duration.ofDays(1));
         when(heldSubmissions.hold(eq("firstSub01"), any(), any(), any(), any())).thenReturn(false);
         when(submissionRepository.existsByUid("firstSub01")).thenReturn(false, true);
+        DataSubmission released = submission("firstSub01");
+        when(submissionRepository.findByUidForWrite("firstSub01")).thenReturn(Optional.empty(), Optional.of(released));
 
         EntitySaveSummaryVM summary = upload(List.of(stubbedRequest("firstSub01")));
 
         verify(transactionManager, times(2)).getTransaction(any(TransactionDefinition.class));
         verify(transactionStatus, times(1)).setRollbackOnly();
-        verify(submissionService, times(2)).upsertAll(submissionsWithUids("firstSub01"), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
-        assertEquals(List.of("firstSub01"), summary.getCreated(), "the outcome of the second save, once");
+        verify(submissionService).upsert(submissionWithUid("firstSub01"), eq(null), any(EntitySaveSummaryVM.class),
+            any(RevisionContext.class));
+        verify(submissionService).upsert(submissionWithUid("firstSub01"), same(released),
+            any(EntitySaveSummaryVM.class), any(RevisionContext.class));
+        assertEquals(List.of("firstSub01"), summary.getUpdated(), "the outcome of the second save, once");
+        assertTrue(summary.getCreated().isEmpty());
         assertTrue(summary.getFailed().isEmpty());
     }
 
@@ -276,7 +287,7 @@ class SubmissionUploadsTest {
 
         SubmissionUploads.Released result = service.saveReleased(request, SubmissionActor.of(user), RELEASE, () -> true);
 
-        verify(submissionService).upsertAll(submissionsWithUids("firstSub01"), any(EntitySaveSummaryVM.class),
+        verify(submissionService).upsert(submissionWithUid("firstSub01"), any(), any(EntitySaveSummaryVM.class),
             eq(RELEASE));
         verify(transactionStatus, never()).setRollbackOnly();
         verify(transactionManager).commit(transactionStatus);
@@ -291,25 +302,22 @@ class SubmissionUploadsTest {
 
         SubmissionUploads.Released result = service.saveReleased(request, SubmissionActor.of(user), RELEASE, () -> false);
 
-        verify(submissionService).upsertAll(submissionsWithUids("firstSub01"), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
+        verify(submissionService).upsert(submissionWithUid("firstSub01"), any(), any(EntitySaveSummaryVM.class),
+            any(RevisionContext.class));
         verify(transactionStatus).setRollbackOnly();
         verify(heldSubmissions, never()).hold(any(), any(), any(), any(), any());
         assertEquals(new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.CHANGED, null), result);
     }
 
     /**
-     * A live upload created the uid after the release last looked: the replay's save found it, so the save is rolled
-     * back and the held copy is superseded instead of overwriting real data (A2 S6).
+     * A live upload created the uid after the release last looked: the replay's transaction found it stored, so the
+     * save is rolled back and the held copy is superseded instead of overwriting real data (A2 S6).
      */
     @Test
     void aReleaseOfAUidThatBecameRealDataMeanwhileOverwritesNothing() {
         DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
-        doAnswer(invocation -> {
-            List<DataSubmission> saved = invocation.getArgument(0);
-            EntitySaveSummaryVM summary = invocation.getArgument(1);
-            saved.forEach(submission -> summary.getUpdated().add(submission.getUid()));
-            return saved;
-        }).when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
+        DataSubmission stored = submission("firstSub01");
+        when(submissionRepository.findByUidForWrite("firstSub01")).thenReturn(Optional.of(stored));
         java.util.concurrent.atomic.AtomicBoolean asked = new java.util.concurrent.atomic.AtomicBoolean();
 
         SubmissionUploads.Released result = service.saveReleased(request, SubmissionActor.of(user), RELEASE, () -> {
@@ -362,12 +370,76 @@ class SubmissionUploadsTest {
 
         var ordered = inOrder(resolver, submissionService);
         ordered.verify(resolver).resolve(any(), eq(assignment), eq(template), any());
-        ordered.verify(submissionService).upsertAll(
-            submissionsWithUids("firstSub01"),
+        ordered.verify(submissionService).upsert(
+            submissionWithUid("firstSub01"), any(),
             any(EntitySaveSummaryVM.class), any(RevisionContext.class));
         ordered.verify(resolver).resolve(any(), eq(assignment), eq(template), any());
-        ordered.verify(submissionService).upsertAll(
-            submissionsWithUids("secondSub1"),
+        ordered.verify(submissionService).upsert(
+            submissionWithUid("secondSub1"), any(),
+            any(EntitySaveSummaryVM.class), any(RevisionContext.class));
+    }
+
+    /**
+     * The transaction takes the submission lock as its first read, before the assignment is read; the stored-record
+     * guard and the save get the locked submission. With no go-live rule to apply, nothing else reads the submission.
+     */
+    @Test
+    void theSubmissionLockComesFirstAndTheGuardAndTheSaveUseTheLockedSubmission() {
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+        DataSubmission stored = submission("firstSub01");
+        when(submissionRepository.findByUidForWrite("firstSub01")).thenReturn(Optional.of(stored));
+        when(user.isSuper()).thenReturn(false);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of("team0000001"));
+        when(formAccessService.canSubmitData(user, assignment, "formUid0001")).thenReturn(true);
+
+        EntitySaveSummaryVM summary = upload(List.of(request));
+
+        var ordered = inOrder(submissionRepository, assignmentRepository, storedSubmissionGuard, submissionService);
+        ordered.verify(submissionRepository).findByUidForWrite("firstSub01");
+        ordered.verify(assignmentRepository).findByUid("assignment1");
+        ordered.verify(storedSubmissionGuard).check(submissionWithUid("firstSub01"), same(stored), eq(user));
+        ordered.verify(submissionService).upsert(submissionWithUid("firstSub01"), same(stored),
+            any(EntitySaveSummaryVM.class), eq(RevisionContext.upload(USER_ID)));
+        verifyNoMoreInteractions(submissionRepository);
+        assertEquals(List.of("firstSub01"), summary.getUpdated());
+    }
+
+    /**
+     * The legacy route takes the submission lock first too, before its form version and its repeat ids, and checks and
+     * saves the locked submission.
+     */
+    @Test
+    void theLegacyRouteTakesTheSubmissionLockFirstAndChecksAndSavesTheLockedSubmission() {
+        DataSubmission incoming = submission("firstSub01");
+        DataSubmission stored = submission("firstSub01");
+        when(submissionRepository.findByUidForWrite("firstSub01")).thenReturn(Optional.of(stored));
+        when(user.isSuper()).thenReturn(false);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of("team0000001"));
+        when(formAccessService.canSubmitData(user, assignment, "formUid0001")).thenReturn(true);
+        legacyLookups();
+
+        EntitySaveSummaryVM summary = service.saveLegacy(List.of(incoming), SubmissionActor.of(user));
+
+        var ordered = inOrder(submissionRepository, templateVersionResolver, storedSubmissionGuard, submissionService);
+        ordered.verify(submissionRepository).findByUidForWrite("firstSub01");
+        ordered.verify(templateVersionResolver).resolveByUid("formUid0001", "version0001");
+        ordered.verify(storedSubmissionGuard).check(same(incoming), same(stored), eq(user));
+        ordered.verify(submissionService).upsert(same(incoming), same(stored), any(EntitySaveSummaryVM.class),
+            eq(RevisionContext.legacyUpload(USER_ID)));
+        verifyNoMoreInteractions(submissionRepository);
+        assertEquals(List.of("firstSub01"), summary.getUpdated());
+    }
+
+    /** A new submission has no stored one to lock: the save creates it. An upload item without a uid locks nothing. */
+    @Test
+    void aNewSubmissionIsSavedWithoutAStoredOneAndNoUidLocksNothing() {
+        upload(List.of(stubbedRequest("firstSub01"), stubbedRequest(null)));
+
+        verify(submissionRepository).findByUidForWrite("firstSub01");
+        verifyNoMoreInteractions(submissionRepository);
+        verify(submissionService).upsert(submissionWithUid("firstSub01"), eq(null), any(EntitySaveSummaryVM.class),
+            any(RevisionContext.class));
+        verify(submissionService).upsert(argThat(submission -> submission.getUid() == null), eq(null),
             any(EntitySaveSummaryVM.class), any(RevisionContext.class));
     }
 
@@ -418,7 +490,7 @@ class SubmissionUploadsTest {
         assertTrue(summary.getCreated().isEmpty());
         verify(formAccessService, never()).canSubmitData(any(), any(), any());
         verify(resolver, never()).resolve(any(), any(), any(), any());
-        verify(submissionService, never()).upsertAll(any(), any(), any());
+        verify(submissionService, never()).upsert(any(), any(), any(), any());
         verify(transactionManager).rollback(transactionStatus);
     }
 
@@ -457,7 +529,7 @@ class SubmissionUploadsTest {
         assertEquals(
             "E4122: You may not submit form `formUid0001` for assignment `assignment1`",
             summary.getFailed().get("firstSub01"));
-        verify(submissionService, never()).upsertAll(any(), any(), any());
+        verify(submissionService, never()).upsert(any(), any(), any(), any());
     }
 
     @Test
@@ -467,12 +539,12 @@ class SubmissionUploadsTest {
         when(user.getUserTeamsUIDs()).thenReturn(Set.of("team0000001"));
         when(formAccessService.canSubmitData(user, assignment, "formUid0001")).thenReturn(true);
         doThrow(new IllegalQueryException(ErrorCode.E4124, "firstSub01"))
-            .when(storedSubmissionGuard).check(any(), any());
+            .when(storedSubmissionGuard).check(any(), any(), any());
 
         EntitySaveSummaryVM summary = upload(List.of(request));
 
         assertTrue(summary.getFailed().get("firstSub01").startsWith("E4124: "));
-        verify(submissionService, never()).upsertAll(any(), any(), any());
+        verify(submissionService, never()).upsert(any(), any(), any(), any());
     }
 
     @Test
@@ -559,7 +631,8 @@ class SubmissionUploadsTest {
         when(user.getId()).thenReturn("01JUSER0000000000000000007");
         DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
         request.setForm("formUid0001");
-        doThrow(uidRace()).when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
+        doThrow(uidRace()).when(submissionService).upsert(any(DataSubmission.class), any(),
+            any(EntitySaveSummaryVM.class), any(RevisionContext.class));
 
         try (LogCapture logs = new LogCapture(SubmissionUploads.class)) {
             EntitySaveSummaryVM summary = upload(List.of(request));
@@ -579,7 +652,8 @@ class SubmissionUploadsTest {
     @Test
     void aReleaseThatMeetsALiveCopyOfItsUidIsAWarningNotAnError() {
         DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
-        doThrow(uidRace()).when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
+        doThrow(uidRace()).when(submissionService).upsert(any(DataSubmission.class), any(),
+            any(EntitySaveSummaryVM.class), any(RevisionContext.class));
 
         try (LogCapture logs = new LogCapture(SubmissionUploads.class)) {
             SubmissionUploads.Released result = service.saveReleased(request, SubmissionActor.of(user), RELEASE, () -> true);
@@ -598,7 +672,8 @@ class SubmissionUploadsTest {
         doThrow(new DataIntegrityViolationException("could not execute statement",
             new org.hibernate.exception.ConstraintViolationException("could not execute statement", otherConstraint,
                 "uk_reference_entry_name")))
-            .when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
+            .when(submissionService).upsert(any(DataSubmission.class), any(), any(EntitySaveSummaryVM.class),
+                any(RevisionContext.class));
 
         try (LogCapture logs = new LogCapture(SubmissionUploads.class)) {
             upload(List.of(request));
@@ -648,9 +723,10 @@ class SubmissionUploadsTest {
         assertEquals(List.of("secondSub1"), summary.getCreated());
         assertEquals("team0000001", second.getTeam(), "the route fills in the context from the assignment");
         assertEquals(1, second.getVersion(), "and from the version");
-        verify(submissionService).upsertAll(submissionsWithUids("secondSub1"), any(EntitySaveSummaryVM.class),
+        verify(submissionService).upsert(submissionWithUid("secondSub1"), any(), any(EntitySaveSummaryVM.class),
             eq(RevisionContext.legacyUpload(USER_ID)));
-        verify(submissionService, never()).upsertAll(submissionsWithUids("firstSub01"), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
+        verify(submissionService, never()).upsert(submissionWithUid("firstSub01"), any(),
+            any(EntitySaveSummaryVM.class), any(RevisionContext.class));
         verify(resolver, never()).resolve(any(), any(), any(), any());
         verify(heldSubmissions, never()).hold(any(), any(), any(), any(), any());
     }
@@ -675,7 +751,7 @@ class SubmissionUploadsTest {
             summary.getFailed().get("secondSub1"));
         assertEquals("E4110: Submission validation Error: Assignment is required",
             summary.getFailed().get("thirdSub01"));
-        verify(submissionService, never()).upsertAll(any(), any(), any());
+        verify(submissionService, never()).upsert(any(), any(), any(), any());
     }
 
     @Test
@@ -728,11 +804,6 @@ class SubmissionUploadsTest {
     // submission here, so matchers compare uids instead.
     private static DataSubmission submissionWithUid(String uid) {
         return argThat(submission -> submission != null && uid.equals(submission.getUid()));
-    }
-
-    private static List<DataSubmission> submissionsWithUids(String... uids) {
-        return argThat(list -> list != null
-            && list.stream().map(DataSubmission::getUid).toList().equals(List.of(uids)));
     }
 
     private DataSubmission entity(String uid) {

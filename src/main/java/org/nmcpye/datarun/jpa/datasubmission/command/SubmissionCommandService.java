@@ -64,11 +64,14 @@ public class SubmissionCommandService {
      * An admin's delete, in one transaction: the submission is marked deleted, and its DELETE event, carrying its
      * last data, is written to the outbox. A submission already deleted is left as it is, with no second event and
      * its first delete time, the rule an upload's {@code deleted=true} already follows. Only an admin may delete.
+     * The transaction takes the submission lock as its first read
+     * ({@link DataSubmissionRepository#findByUidForWrite}), so another change of the submission waits until the delete
+     * ends.
      */
     public DeleteOutcome delete(SubmissionCommand.Delete command) {
         requireAdmin(command, "Only an admin may delete a submission");
         return new TransactionTemplate(transactionManager).execute(status -> {
-            DataSubmission submission = submissions.findByUid(command.uid()).orElse(null);
+            DataSubmission submission = submissions.findByUidForWrite(command.uid()).orElse(null);
             if (submission == null) {
                 return DeleteOutcome.NOT_FOUND;
             }

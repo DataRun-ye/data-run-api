@@ -203,7 +203,7 @@ class A2SequencesTier2IT extends A2GoldenSupport {
         };
         SubmissionUploads hookedUploads = new SubmissionUploads(submissionService, uploadMapper, objectMapper,
             assignments, formAccess, templateVersions, references, transactionManager, releasedMeanwhile,
-            storedSubmissionGuard);
+            storedSubmissionGuard, submissions);
 
         scenario
             .goLive("campaign", null, null, FUTURE)

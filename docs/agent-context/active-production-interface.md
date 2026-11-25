@@ -150,7 +150,7 @@ Liquibase contraction.
 
 | Status | Route | Server owner |
 | --- | --- | --- |
-| CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveVersionedUpload` -> `SubmissionCommandService.upload` -> `SubmissionUploads` -> `DefaultDataSubmissionService.upsertAll` |
+| CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveVersionedUpload` -> `SubmissionCommandService.upload` -> `SubmissionUploads` -> `DefaultDataSubmissionService.upsert` |
 | CORE-ACTIVE (app 6.1.0+) | `POST /api/v1/dataSubmission/bulk/practice?referenceVersion=1` | `DataSubmissionResource.savePracticeUpload` -> `SubmissionCommandService.uploadPractice` (practice: always held) |
 | ADMIN | `GET`/`PUT /api/v1/admin/goLiveRules`, `DELETE /{uid}`, `GET /effective` | `GoLiveRuleResource` -> `GoLiveRuleService` -> `GoLiveRuleRepository` (`go_live_rule`) |
 | ADMIN | `GET /api/v1/admin/heldSubmissions`, `GET /summary`, `GET /{uid}` | `HeldSubmissionResource` -> `HeldSubmissionRepository` (`held_submission`, reads) |
@@ -180,6 +180,21 @@ inherits none of the generic writes since 6.5.5 (it extends the read-only
 lines on these paths carry identifiers and shapes only: submission and form
 uids, the user id, counts, error codes and exception types, never a login, a
 submitted value or an exception message.
+
+The submission lock first: each transaction that writes a stored submission
+(both upload routes, a held release's replay, the admin delete) takes the
+submission lock as its first read, through
+`DataSubmissionRepository.findByUidForWrite`: a pessimistic write lock that
+Hibernate 6.6 issues on PostgreSQL as `SELECT ... FOR NO KEY UPDATE`, the lock
+every `UPDATE` of a submission takes. The stored-record guard and the save use
+the submission it locked, and another change of the same submission waits
+until the transaction ends instead of committing between its reads, where it
+used to fail the later write's version check (the upload item as
+`UNEXPECTED_FAILURE`, the delete as a 409). The waits are not bounded beyond
+the database's own settings. A new submission has nothing to lock: a second
+save of its uid still fails on the uid's unique constraint (below).
+`SubmissionWriteOwnershipTest` keeps the submission lock to the command
+service and its persistence layer.
 
 `data_submission`'s indexes: the primary key, the unique keys on `uid` and
 `serial_number`, `idx_ds_form_assignment`, and two that only the generic read

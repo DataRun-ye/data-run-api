@@ -47,7 +47,7 @@ final class SubmissionLog {
      * An unexpected failure: the exception types from the outermost to the root cause, the first SQLState among
      * them, and the root cause's first application frames ({@link FailureShape}), for example
      * {@code DataIntegrityViolationException < PSQLException, SQLState 23505, at OutboxWriter.batchInsert:67 <
-     * DefaultDataSubmissionService.upsertAll:149}.
+     * DefaultDataSubmissionService.upsert:113}.
      */
     static String failure(Throwable failure) {
         return FailureShape.of(failure);

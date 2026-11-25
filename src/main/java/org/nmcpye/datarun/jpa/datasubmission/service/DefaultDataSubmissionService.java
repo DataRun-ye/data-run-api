@@ -7,7 +7,6 @@ import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.common.DefaultJpaSoftDeleteService;
-import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
@@ -21,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * The submission persistence layer behind {@code SubmissionCommandService}: it stores submissions and, in the same
@@ -86,109 +83,52 @@ public class DefaultDataSubmissionService
         existingEntity.setTeamCode(incomingEntity.getTeamCode());
     }
 
+    /**
+     * A new submission is persisted at version 0. A stored one, which the caller holds under the submission lock, is
+     * updated in place: a first {@code deleted=true} marks it deleted and keeps its values; any other copy whose
+     * persisted fields differ replaces them; anything else writes nothing. The flush raises the version of a change,
+     * and that change is recorded.
+     */
     @Transactional
     @Override
-    public List<DataSubmission> upsertAll(
-        Collection<DataSubmission> entities,
+    public void upsert(
+        DataSubmission incoming,
+        DataSubmission stored,
         EntitySaveSummaryVM summary,
         RevisionContext revision) {
         Objects.requireNonNull(revision, "revision");
-        if (entities == null || entities.isEmpty()) {
-            return List.of();
+        if (incoming.getUid() == null) {
+            throw new IllegalArgumentException("A submission must have a uid to be saved");
+        }
+        if (stored != null && !incoming.getUid().equals(stored.getUid())) {
+            throw new IllegalArgumentException("The stored submission is not the incoming one");
         }
 
-        Set<String> incomingUids = entities.stream()
-            .map(entity -> {
-                if (entity.getUid() == null) {
-                    throw new IllegalArgumentException("Entity in bulk operation must have a UID for upsert operation.");
-                }
-                return entity.getUid();
-            })
-            .collect(Collectors.toSet());
-
-        List<DataSubmission> existingEntitiesFromDb = jpaAuditableObjectRepository.findAllByUidIn(new ArrayList<>(incomingUids));
-        Map<String, DataSubmission> existingEntitiesMap = existingEntitiesFromDb.stream()
-            .collect(Collectors.toMap(JpaSoftDeleteObject::getUid, Function.identity()));
-        Map<DataSubmission, Stored> stored = new IdentityHashMap<>();
-        existingEntitiesFromDb.forEach(existing ->
-            stored.put(existing, new Stored(existing.getLockVersion(), Boolean.TRUE.equals(existing.getDeleted()))));
-
-        List<DataSubmission> entitiesToPersist = new ArrayList<>();
-        List<DataSubmission> entitiesToUpdate = new ArrayList<>();
-        List<DataSubmission> entitiesToDelete = new ArrayList<>();
-        List<DataSubmission> normalResults = new ArrayList<>();
-        List<DataSubmission> deleteResults = new ArrayList<>();
-
-        for (DataSubmission incomingEntity : entities) {
-            DataSubmission existingEntity = existingEntitiesMap.get(incomingEntity.getUid());
-            boolean isNew = (existingEntity == null);
-
-            if (isNew) {
-                if (incomingEntity.getId() == null) {
-                    incomingEntity.setId(CodeGenerator.nextUlid());
-                }
-                entitiesToPersist.add(incomingEntity);
-            } else if (Boolean.TRUE.equals(incomingEntity.getDeleted())) {
-                deleteResults.add(existingEntity);
-                if (!Boolean.TRUE.equals(existingEntity.getDeleted())) {
-                    existingEntity.setDeleted(true);
-                    existingEntity.setDeletedAt(Instant.now());
-                    entitiesToDelete.add(existingEntity);
-                }
-            } else {
-                normalResults.add(existingEntity);
-                if (!mutableFieldsMatch(existingEntity, incomingEntity)) {
-                    updateMutableFields(existingEntity, incomingEntity);
-                    entitiesToUpdate.add(existingEntity);
-                }
+        if (stored == null) {
+            if (incoming.getId() == null) {
+                incoming.setId(CodeGenerator.nextUlid());
             }
+            List<DataSubmission> persisted = jpaAuditableObjectRepository.persistAllAndFlush(List.of(incoming));
+            summary.getCreated().addAll(persisted.stream().map(DataSubmission::getUid).toList());
+            persisted.forEach(created -> record(created, null, revision));
+            return;
         }
 
-        List<DataSubmission> persistedResults = List.of();
-
-        if (!entitiesToPersist.isEmpty()) {
-            persistedResults = jpaAuditableObjectRepository.persistAllAndFlush(entitiesToPersist);
-            summary.getCreated().addAll(persistedResults.stream().map(DataSubmission::getUid).toList());
-        }
-        if (!entitiesToUpdate.isEmpty()) {
-            jpaAuditableObjectRepository.updateAllAndFlush(entitiesToUpdate);
-        }
-        if (!entitiesToDelete.isEmpty()) {
-            jpaAuditableObjectRepository.updateAllAndFlush(entitiesToDelete);
-        }
-
-        persistedResults.forEach(created -> record(created, null, revision));
-        recordChanges(entities, existingEntitiesMap, stored, revision);
-
-        summary.getUpdated().addAll(normalResults.stream().map(DataSubmission::getUid).toList());
-        summary.getUpdated().addAll(deleteResults.stream().map(DataSubmission::getUid).toList());
-
-        List<DataSubmission> combinedResults = new ArrayList<>(persistedResults);
-        combinedResults.addAll(normalResults);
-        combinedResults.addAll(deleteResults);
-        return combinedResults;
-    }
-
-
-    /**
-     * Records a revision for every stored submission of this write whose version moved, in the order the write
-     * received them: the flushes above raised it for each one they changed.
-     */
-    private void recordChanges(
-        Collection<DataSubmission> incoming,
-        Map<String, DataSubmission> existingByUid,
-        Map<DataSubmission, Stored> stored,
-        RevisionContext revision) {
-        Set<DataSubmission> seen = Collections.newSetFromMap(new IdentityHashMap<>());
-        for (DataSubmission entity : incoming) {
-            DataSubmission existing = existingByUid.get(entity.getUid());
-            if (existing != null && seen.add(existing)) {
-                Stored before = stored.get(existing);
-                if (!Objects.equals(before.version(), existing.getLockVersion())) {
-                    record(existing, before, revision);
-                }
+        Stored before = new Stored(stored.getLockVersion(), Boolean.TRUE.equals(stored.getDeleted()));
+        if (Boolean.TRUE.equals(incoming.getDeleted())) {
+            if (!before.deleted()) {
+                stored.setDeleted(true);
+                stored.setDeletedAt(Instant.now());
+                jpaAuditableObjectRepository.updateAllAndFlush(List.of(stored));
             }
+        } else if (!mutableFieldsMatch(stored, incoming)) {
+            updateMutableFields(stored, incoming);
+            jpaAuditableObjectRepository.updateAllAndFlush(List.of(stored));
         }
+        if (!Objects.equals(before.version(), stored.getLockVersion())) {
+            record(stored, before, revision);
+        }
+        summary.getUpdated().add(stored.getUid());
     }
 
     /**
@@ -246,7 +186,7 @@ public class DefaultDataSubmissionService
 
     /**
      * Not for submissions: the generic save would write a submission without a revision or an outbox row. A
-     * submission is created or changed only through {@code SubmissionCommandService} ({@link #upsertAll}). No route
+     * submission is created or changed only through {@code SubmissionCommandService} ({@link #upsert}). No route
      * reaches it: since 6.5.5 the submission resource has no generic POST or PUT, which answer 405 (A2 W4-01, W5-01).
      */
     @Override

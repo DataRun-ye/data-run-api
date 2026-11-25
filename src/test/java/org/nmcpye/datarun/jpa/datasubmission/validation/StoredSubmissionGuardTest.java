@@ -8,7 +8,6 @@ import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.userdetail.UserFormAccess;
@@ -19,10 +18,8 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class StoredSubmissionGuardTest {
@@ -33,24 +30,24 @@ class StoredSubmissionGuardTest {
     private static final String OTHER_FORM = "form0000002";
     private static final String SUBMISSION = "submit00001";
 
-    private final DataSubmissionRepository submissions = mock(DataSubmissionRepository.class);
     private final AssignmentRepository assignments = mock(AssignmentRepository.class);
     private final StoredSubmissionGuard guard =
-        new StoredSubmissionGuard(submissions, assignments, new AssignmentFormAccessService());
+        new StoredSubmissionGuard(assignments, new AssignmentFormAccessService());
+    /** The stored record the upload's transaction locked, or null for a new submission. */
+    private DataSubmission stored;
 
     @Test
     void aNewSubmissionIsNotChecked() {
-        when(submissions.findByUid(SUBMISSION)).thenReturn(Optional.empty());
-
-        assertThatCode(() -> guard.check(incoming(FORM, false), user(FormPermission.ADD_SUBMISSIONS)))
+        assertThatCode(() -> guard.check(incoming(FORM, false), null, user(FormPermission.ADD_SUBMISSIONS)))
             .doesNotThrowAnyException();
+        verifyNoInteractions(assignments);
     }
 
     @Test
     void aResendOfARecordTheUserMaySubmitPasses() {
         stored(FORM, assignment("assignOwn01", OWN_TEAM));
 
-        assertThatCode(() -> guard.check(incoming(FORM, false), user(FormPermission.ADD_SUBMISSIONS)))
+        assertThatCode(() -> guard.check(incoming(FORM, false), stored, user(FormPermission.ADD_SUBMISSIONS)))
             .doesNotThrowAnyException();
     }
 
@@ -58,7 +55,7 @@ class StoredSubmissionGuardTest {
     void aRecordNeverChangesForm() {
         stored(OTHER_FORM, assignment("assignOwn01", OWN_TEAM));
 
-        assertThatThrownBy(() -> guard.check(incoming(FORM, false), user(FormPermission.ADD_SUBMISSIONS)))
+        assertThatThrownBy(() -> guard.check(incoming(FORM, false), stored, user(FormPermission.ADD_SUBMISSIONS)))
             .isInstanceOf(IllegalQueryException.class)
             .extracting("errorCode").isEqualTo(ErrorCode.E4123);
     }
@@ -67,7 +64,7 @@ class StoredSubmissionGuardTest {
     void aRecordOfAnotherTeamCannotBeChanged() {
         stored(FORM, assignment("assignOth01", OTHER_TEAM));
 
-        assertThatThrownBy(() -> guard.check(incoming(FORM, true), user(FormPermission.ADD_SUBMISSIONS)))
+        assertThatThrownBy(() -> guard.check(incoming(FORM, true), stored, user(FormPermission.ADD_SUBMISSIONS)))
             .isInstanceOf(IllegalQueryException.class)
             .extracting("errorCode").isEqualTo(ErrorCode.E4124);
     }
@@ -79,7 +76,7 @@ class StoredSubmissionGuardTest {
         when(user.getUserTeamsUIDs()).thenReturn(Set.of(OWN_TEAM));
         when(user.getFormAccess()).thenReturn(List.of(access(OTHER_FORM, FormPermission.ADD_SUBMISSIONS)));
 
-        assertThatThrownBy(() -> guard.check(incoming(FORM, false), user))
+        assertThatThrownBy(() -> guard.check(incoming(FORM, false), stored, user))
             .isInstanceOf(IllegalQueryException.class)
             .extracting("errorCode").isEqualTo(ErrorCode.E4124);
     }
@@ -88,10 +85,10 @@ class StoredSubmissionGuardTest {
     void deletingNeedsTheDeletePermission() {
         stored(FORM, assignment("assignOwn01", OWN_TEAM));
 
-        assertThatThrownBy(() -> guard.check(incoming(FORM, true), user(FormPermission.ADD_SUBMISSIONS)))
+        assertThatThrownBy(() -> guard.check(incoming(FORM, true), stored, user(FormPermission.ADD_SUBMISSIONS)))
             .isInstanceOf(IllegalQueryException.class)
             .extracting("errorCode").isEqualTo(ErrorCode.E4125);
-        assertThatCode(() -> guard.check(incoming(FORM, true),
+        assertThatCode(() -> guard.check(incoming(FORM, true), stored,
             user(FormPermission.ADD_SUBMISSIONS, FormPermission.DELETE_SUBMISSIONS)))
             .doesNotThrowAnyException();
     }
@@ -100,10 +97,10 @@ class StoredSubmissionGuardTest {
     void changingAnotherUsersRecordNeedsEditFromUsers() {
         stored(FORM, assignment("assignOwn01", OWN_TEAM), "teammate");
 
-        assertThatThrownBy(() -> guard.check(incoming(FORM, false), user(FormPermission.ADD_SUBMISSIONS)))
+        assertThatThrownBy(() -> guard.check(incoming(FORM, false), stored, user(FormPermission.ADD_SUBMISSIONS)))
             .isInstanceOf(IllegalQueryException.class)
             .extracting("errorCode").isEqualTo(ErrorCode.E4126);
-        assertThatCode(() -> guard.check(incoming(FORM, false),
+        assertThatCode(() -> guard.check(incoming(FORM, false), stored,
             user(FormPermission.ADD_SUBMISSIONS, FormPermission.EDIT_SUBMISSIONS_FROM_USERS)))
             .doesNotThrowAnyException();
     }
@@ -112,11 +109,11 @@ class StoredSubmissionGuardTest {
     void deletingAnotherUsersRecordNeedsDeleteFromUsers() {
         stored(FORM, assignment("assignOwn01", OWN_TEAM), "teammate");
 
-        assertThatThrownBy(() -> guard.check(incoming(FORM, true),
+        assertThatThrownBy(() -> guard.check(incoming(FORM, true), stored,
             user(FormPermission.ADD_SUBMISSIONS, FormPermission.DELETE_SUBMISSIONS)))
             .isInstanceOf(IllegalQueryException.class)
             .extracting("errorCode").isEqualTo(ErrorCode.E4125);
-        assertThatCode(() -> guard.check(incoming(FORM, true),
+        assertThatCode(() -> guard.check(incoming(FORM, true), stored,
             user(FormPermission.ADD_SUBMISSIONS, FormPermission.DELETE_SUBMISSIONS_FROM_USERS)))
             .doesNotThrowAnyException();
     }
@@ -125,7 +122,7 @@ class StoredSubmissionGuardTest {
     void aRecordWithoutAKnownCreatorCountsAsAnotherUsers() {
         stored(FORM, assignment("assignOwn01", OWN_TEAM), null);
 
-        assertThatThrownBy(() -> guard.check(incoming(FORM, false), user(FormPermission.ADD_SUBMISSIONS)))
+        assertThatThrownBy(() -> guard.check(incoming(FORM, false), stored, user(FormPermission.ADD_SUBMISSIONS)))
             .isInstanceOf(IllegalQueryException.class)
             .extracting("errorCode").isEqualTo(ErrorCode.E4126);
     }
@@ -134,7 +131,7 @@ class StoredSubmissionGuardTest {
     void theCreatorMatchesTheLoginWhateverItsCase() {
         stored(FORM, assignment("assignOwn01", OWN_TEAM), "WORKER");
 
-        assertThatCode(() -> guard.check(incoming(FORM, false), user(FormPermission.ADD_SUBMISSIONS)))
+        assertThatCode(() -> guard.check(incoming(FORM, false), stored, user(FormPermission.ADD_SUBMISSIONS)))
             .doesNotThrowAnyException();
     }
 
@@ -142,10 +139,10 @@ class StoredSubmissionGuardTest {
     void administratorsAreNotChecked() {
         CurrentUserDetails administrator = mock(CurrentUserDetails.class);
         when(administrator.isSuper()).thenReturn(true);
+        stored(FORM, assignment("assignOth01", OTHER_TEAM));
 
-        guard.check(incoming(FORM, true), administrator);
-
-        verify(submissions, never()).findByUid(any());
+        assertThatCode(() -> guard.check(incoming(FORM, true), stored, administrator)).doesNotThrowAnyException();
+        verifyNoInteractions(assignments);
     }
 
     private void stored(String form, Assignment assignment) {
@@ -153,12 +150,11 @@ class StoredSubmissionGuardTest {
     }
 
     private void stored(String form, Assignment assignment, String createdBy) {
-        DataSubmission stored = new DataSubmission();
+        stored = new DataSubmission();
         stored.setUid(SUBMISSION);
         stored.setForm(form);
         stored.setCreatedBy(createdBy);
         stored.setAssignment(assignment.getUid());
-        when(submissions.findByUid(SUBMISSION)).thenReturn(Optional.of(stored));
         when(assignments.findByUid(assignment.getUid())).thenReturn(Optional.of(assignment));
     }
 

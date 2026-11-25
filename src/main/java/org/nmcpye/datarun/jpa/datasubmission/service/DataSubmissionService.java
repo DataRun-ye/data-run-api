@@ -3,11 +3,9 @@ package org.nmcpye.datarun.jpa.datasubmission.service;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Collection;
-import java.util.List;
 
 /**
  * Service Interface for managing {@link DataSubmission}.
@@ -16,12 +14,17 @@ public interface DataSubmissionService
     extends JpaIdentifiableObjectService<DataSubmission> {
 
     /**
-     * Creates or updates the submissions, in the caller's transaction. Each one whose version the write moves gets a
-     * revision recording {@code revision}, and its outbox row.
+     * Creates the incoming submission, or updates the stored one with it, in the caller's transaction. A write that
+     * moves the version gets a revision recording {@code revision}, and its outbox row.
+     *
+     * @param stored the stored submission with the incoming uid, as the caller took it under the submission lock
+     *               ({@link DataSubmissionRepository#findByUidForWrite}), or null when none was stored: the incoming
+     *               one is then created
      */
     @Transactional
-    List<DataSubmission> upsertAll(
-        Collection<DataSubmission> entities,
+    void upsert(
+        DataSubmission incoming,
+        DataSubmission stored,
         EntitySaveSummaryVM summary,
         RevisionContext revision);
 

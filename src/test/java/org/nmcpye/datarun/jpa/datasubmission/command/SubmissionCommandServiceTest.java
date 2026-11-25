@@ -41,16 +41,18 @@ class SubmissionCommandServiceTest {
             mock(SubmissionUploads.class), submissionService, submissions, transactionManager, decisions);
     }
 
+    /** The delete reads the submission only under the submission lock, and deletes the submission it locked. */
     @Test
-    void anAdminDeleteMarksTheSubmissionDeletedInOneTransaction() {
+    void anAdminDeleteLocksTheSubmissionAndMarksItDeletedInOneTransaction() {
         DataSubmission stored = new DataSubmission();
         stored.setUid("storedSub01");
-        when(submissions.findByUid("storedSub01")).thenReturn(Optional.of(stored));
+        when(submissions.findByUidForWrite("storedSub01")).thenReturn(Optional.of(stored));
 
         assertEquals(SubmissionCommandService.DeleteOutcome.DELETED,
             service.delete(new SubmissionCommand.Delete(actor(true), "storedSub01")));
 
         verify(submissionService).softDelete(stored, RevisionContext.adminDelete("01JUSER00000000000000000AA"));
+        verify(submissions, never()).findByUid(any());
         verify(transactionManager).commit(transaction);
     }
 
@@ -60,7 +62,7 @@ class SubmissionCommandServiceTest {
         DataSubmission deleted = new DataSubmission();
         deleted.setUid("deletedSub1");
         deleted.setDeleted(true);
-        when(submissions.findByUid("deletedSub1")).thenReturn(Optional.of(deleted));
+        when(submissions.findByUidForWrite("deletedSub1")).thenReturn(Optional.of(deleted));
 
         assertEquals(SubmissionCommandService.DeleteOutcome.ALREADY_DELETED,
             service.delete(new SubmissionCommand.Delete(actor(true), "deletedSub1")));
@@ -72,7 +74,7 @@ class SubmissionCommandServiceTest {
     /** A2 W6-03 and W6-04: an unknown uid used to end in a NoSuchElementException, a 500. */
     @Test
     void deletingAnUnknownUidWritesNothing() {
-        when(submissions.findByUid("noSuchSub01")).thenReturn(Optional.empty());
+        when(submissions.findByUidForWrite("noSuchSub01")).thenReturn(Optional.empty());
 
         assertEquals(SubmissionCommandService.DeleteOutcome.NOT_FOUND,
             service.delete(new SubmissionCommand.Delete(actor(true), "noSuchSub01")));

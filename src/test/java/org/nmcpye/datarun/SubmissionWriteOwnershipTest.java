@@ -50,7 +50,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>The persistence layer is the {@code DataSubmissionService} port and its implementation, the submission
  * repository, {@code SubmissionIntake.hold}, {@code HeldSubmissionRepository} and {@code OutboxWriter}. The rule
- * forbids every other class to call their write methods. What it cannot see:</p>
+ * forbids every other class to call their write methods, and the submission lock every write starts with
+ * ({@code DataSubmissionRepository.findByUidForWrite}). What it cannot see:</p>
  * <ul>
  *   <li>writes made through the generic {@code IdentifiableObjectService} or {@code JpaIdentifiableRepository}
  *       types. The submission resource has inherited no generic write since 6.5.5: {@code PUT /dataSubmission/{uid}},
@@ -76,7 +77,7 @@ class SubmissionWriteOwnershipTest {
     private static final DescribedPredicate<JavaMethodCall> SUBMISSION_WRITE =
         writeOn(DataSubmissionService.class, "upsert", "softDelete", "save", "update", "delete")
             .or(writeOn(DataSubmissionRepository.class,
-                "save", "persist", "update", "delete", "merge", "insert", "remove"))
+                "save", "persist", "update", "delete", "merge", "insert", "remove", "findByUidForWrite"))
             .or(writeOn(HeldSubmissionRepository.class, "hold", "markDecided", "recordReleaseError"))
             .or(writeOn(SubmissionIntake.class, "hold"))
             .or(writeOn(OutboxWritePort.class, "insert"))
@@ -409,19 +410,24 @@ class SubmissionWriteOwnershipTest {
         JavaClasses withABackDoor = new ClassFileImporter().importClasses(BackDoor.class, ModifyingSubmissions.class);
 
         assertThat(ONLY_THE_COMMAND_SERVICE_WRITES_SUBMISSIONS.evaluate(withABackDoor).getFailureReport().getDetails())
-            .hasSize(6)
+            .hasSize(7)
             .allSatisfy(line -> assertThat(line).contains(BackDoor.class.getName()))
+            .anySatisfy(line -> assertThat(line).contains("DataSubmissionRepository.findByUidForWrite"))
             .anySatisfy(line -> assertThat(line).contains("ModifyingSubmissions.tidy"));
     }
 
-    /** Six writes the rule must catch, for the test above only; the last one by its @Modifying, not its name. */
+    /**
+     * Seven writes the rule must catch, for the test above only: the submission lock among them, and the last one by
+     * its @Modifying, not its name.
+     */
     @SuppressWarnings("unused")
     static class BackDoor {
         void writes(DataSubmissionService submissions, DataSubmissionRepository repository,
                     HeldSubmissionRepository held, OutboxWritePort outbox, SubmissionRevisionWriter revisions,
                     ModifyingSubmissions modifying) {
-            submissions.upsertAll(List.of(), new EntitySaveSummaryVM(), null);
+            submissions.upsert(null, null, new EntitySaveSummaryVM(), null);
             repository.deleteAllByUidIn(List.of("a"));
+            repository.findByUidForWrite("a");
             held.recordReleaseError("a", "b");
             outbox.insert(List.of());
             revisions.append("a", 0, null, null, null);

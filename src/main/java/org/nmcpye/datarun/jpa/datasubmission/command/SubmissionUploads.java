@@ -13,6 +13,7 @@ import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
@@ -49,6 +50,11 @@ import java.util.function.Function;
  * A submission, the Reference entries it defines and its outbox row commit or roll back together. Phones apply the
  * per-row created/updated/failed result (mobile 5.3.0 and 6.0.x).
  *
+ * <p>Each transaction takes the submission lock as its first read
+ * ({@link DataSubmissionRepository#findByUidForWrite}): the stored-record guard and the save use the submission it
+ * locked, and another change of the submission waits until the transaction ends instead of committing between its
+ * reads. A new submission has nothing to lock; a second save of its uid fails on the uid's unique constraint.</p>
+ *
  * <p>Only the command service calls this class; it is a separate component so that a held release can replay an
  * upload through it.</p>
  */
@@ -74,6 +80,7 @@ public class SubmissionUploads {
     private final PlatformTransactionManager transactionManager;
     private final SubmissionIntake intake;
     private final StoredSubmissionGuard storedSubmissionGuard;
+    private final DataSubmissionRepository submissionRepository;
 
     /**
      * The versioned upload route. Every submission is checked and saved as
@@ -208,8 +215,9 @@ public class SubmissionUploads {
             DataSubmission::getUid,
             DataSubmission::getForm,
             (submission, summary, transaction) -> {
-                checkLegacy(submission, actor);
-                submissionService.upsertAll(List.of(submission), summary, revision);
+                DataSubmission stored = lockSubmission(submission.getUid());
+                checkLegacy(submission, stored, actor);
+                submissionService.upsert(submission, stored, summary, revision);
                 return IntakeDecision.save();
             },
             submission -> null,
@@ -224,13 +232,14 @@ public class SubmissionUploads {
         Instant receivedAt,
         RevisionContext revision) {
         DataSubmission submission = mapper.toEntity(request);
+        DataSubmission stored = lockSubmission(submission.getUid());
         Assignment assignment = assignmentFor(submission);
         TemplateVersionContext template = templateFor(submission);
         canonicalizeContext(
             submission,
             assignment,
             template.getTemplate());
-        authorize(submission, assignment, actor.access(), assignment.getTeam().getUid());
+        authorize(submission, stored, assignment, actor.access(), assignment.getTeam().getUid());
         IntakeDecision decision = intake.decide(
             mode,
             submission,
@@ -243,12 +252,25 @@ public class SubmissionUploads {
             assignment,
             template.getTemplate(),
             request.getReferenceDefinitions());
-        submissionService.upsertAll(List.of(submission), summary, revision);
+        submissionService.upsert(submission, stored, summary, revision);
         return decision;
     }
 
-    /** The legacy route's checks and context, in that route's order; see {@link #saveLegacy}. */
-    private void checkLegacy(DataSubmission submission, SubmissionActor actor) {
+    /**
+     * Takes the submission lock: the stored submission with this uid, locked until the transaction ends, or null when
+     * none is stored (or the upload item names no uid). It is the transaction's first read of the submission: the
+     * stored-record guard and the save use the submission it returns.
+     */
+    private DataSubmission lockSubmission(String uid) {
+        return uid == null ? null : submissionRepository.findByUidForWrite(uid).orElse(null);
+    }
+
+    /**
+     * The legacy route's checks and context, in that route's order; see {@link #saveLegacy}.
+     *
+     * @param stored the stored submission, as {@link #lockSubmission} returned it
+     */
+    private void checkLegacy(DataSubmission submission, DataSubmission stored, SubmissionActor actor) {
         TemplateVersionContext template = templateVersionResolver.resolveByUid(
             submission.getForm(),
             submission.getFormVersion());
@@ -260,7 +282,7 @@ public class SubmissionUploads {
             if (assignment == null) {
                 throw new DomainValidationException("Assignment is required");
             }
-            authorize(submission, assignment, actor.access(), submission.getTeam());
+            authorize(submission, stored, assignment, actor.access(), submission.getTeam());
         }
         if (submission.getAssignment() == null) {
             throw new DomainValidationException("Assignment is required");
@@ -428,11 +450,13 @@ public class SubmissionUploads {
      * The upload checks for a non-admin: the assignment's team is in the user's scope (E4114), the user may submit
      * the form there (E4122), and an existing record may be changed by them ({@link StoredSubmissionGuard}).
      *
+     * @param stored        the stored submission, as {@link #lockSubmission} returned it
      * @param teamInRefusal the team E4114 names: the assignment's on the versioned route, the claimed one on the
      *                      legacy route
      */
     private void authorize(
         DataSubmission submission,
+        DataSubmission stored,
         Assignment assignment,
         CurrentUserDetails user,
         String teamInRefusal) {
@@ -455,7 +479,7 @@ public class SubmissionUploads {
                 submission.getForm(),
                 assignment.getUid());
         }
-        storedSubmissionGuard.check(submission, user);
+        storedSubmissionGuard.check(submission, stored, user);
     }
 
     private void generateMissingRepeatIds(

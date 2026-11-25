@@ -23,7 +23,7 @@ public final class FailureShape {
     /**
      * The exception types from the outermost to the root cause, the first SQLState among them, and the root cause's
      * first application frames, for example {@code DataIntegrityViolationException < PSQLException, SQLState 23505,
-     * at OutboxWriter.batchInsert:67 < DefaultDataSubmissionService.upsertAll:149}.
+     * at OutboxWriter.batchInsert:67 < DefaultDataSubmissionService.upsert:113}.
      */
     public static String of(Throwable failure) {
         List<String> types = new ArrayList<>();

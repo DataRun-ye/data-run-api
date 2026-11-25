@@ -32,13 +32,11 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -79,14 +77,11 @@ class DefaultDataSubmissionServiceTest {
             "unchang0001",
             "01UNCHANGED000000000000001");
         DataSubmission incoming = incomingSubmission("unchang0001");
-        findExisting(existing);
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
+        service.upsert(incoming, existing, summary, UPLOAD);
 
         assertEquals(List.of("unchang0001"), summary.getUpdated());
-        assertEquals(1, results.size());
-        assertSame(existing, results.get(0));
         verify(repository, never()).persistAllAndFlush(anyList());
         verify(repository, never()).updateAllAndFlush(anyList());
         verifyNoInteractions(outbox, revisions);
@@ -102,14 +97,12 @@ class DefaultDataSubmissionServiceTest {
             "01MUTABLE0000000000000001");
         DataSubmission incoming = incomingSubmission("mutable0001");
         change.accept(incoming);
-        findExisting(existing);
         updateReturnsInput();
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
+        service.upsert(incoming, existing, summary, UPLOAD);
 
         assertEquals(List.of("mutable0001"), summary.getUpdated(), field);
-        assertSame(existing, results.get(0));
         verifySingleUpdate(existing, RevisionKind.UPDATE, "UPDATE");
     }
 
@@ -132,13 +125,11 @@ class DefaultDataSubmissionServiceTest {
         incoming.setLastModifiedBy("incoming-modifier");
         incoming.setCreatedDate(Instant.parse("2030-01-04T00:00:00Z"));
         incoming.setLastModifiedDate(Instant.parse("2030-01-05T00:00:00Z"));
-        findExisting(existing);
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
+        service.upsert(incoming, existing, summary, UPLOAD);
 
         assertEquals(List.of("ignored0001"), summary.getUpdated());
-        assertSame(existing, results.get(0));
         verify(repository, never()).updateAllAndFlush(anyList());
         verifyNoInteractions(outbox, revisions);
     }
@@ -159,13 +150,11 @@ class DefaultDataSubmissionServiceTest {
         incoming.setDeletedAt(Instant.parse("2030-01-01T00:00:00Z"));
         incoming.setFormData(objectMapper.createObjectNode().put("changed", true));
         incoming.setActivity("changed-act");
-        findExisting(existing);
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
+        service.upsert(incoming, existing, summary, UPLOAD);
 
         assertEquals(List.of("deleted0001"), summary.getUpdated());
-        assertSame(existing, results.get(0));
         assertEquals(deletedAt, existing.getDeletedAt());
         assertEquals(originalFormData, existing.getFormData());
         assertEquals(originalActivity, existing.getActivity());
@@ -184,13 +173,11 @@ class DefaultDataSubmissionServiceTest {
         existing.setDeletedAt(deletedAt);
         DataSubmission incoming = incomingSubmission("delkeep0001");
         incoming.setDeleted("false".equals(deletedValue) ? false : null);
-        findExisting(existing);
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
+        service.upsert(incoming, existing, summary, UPLOAD);
 
         assertEquals(List.of("delkeep0001"), summary.getUpdated());
-        assertSame(existing, results.get(0));
         assertTrue(existing.getDeleted());
         assertEquals(deletedAt, existing.getDeletedAt());
         verify(repository, never()).updateAllAndFlush(anyList());
@@ -209,14 +196,12 @@ class DefaultDataSubmissionServiceTest {
         DataSubmission incoming = incomingSubmission("delupdt0001");
         incoming.setDeleted("false".equals(deletedValue) ? false : null);
         incoming.setActivity("changed-act");
-        findExisting(existing);
         updateReturnsInput();
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
+        service.upsert(incoming, existing, summary, UPLOAD);
 
         assertEquals(List.of("delupdt0001"), summary.getUpdated());
-        assertSame(existing, results.get(0));
         assertTrue(existing.getDeleted());
         assertEquals(deletedAt, existing.getDeletedAt());
         assertEquals("changed-act", existing.getActivity());
@@ -236,15 +221,13 @@ class DefaultDataSubmissionServiceTest {
         incoming.setDeletedAt(suppliedDeletedAt);
         incoming.setFormData(objectMapper.createObjectNode().put("changed", true));
         incoming.setActivity("changed-act");
-        findExisting(existing);
         updateReturnsInput();
         Instant beforeDelete = Instant.now();
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
+        service.upsert(incoming, existing, summary, UPLOAD);
 
         assertEquals(List.of("delete00001"), summary.getUpdated());
-        assertSame(existing, results.get(0));
         assertTrue(existing.getDeleted());
         assertNotNull(existing.getDeletedAt());
         assertFalse(existing.getDeletedAt().isBefore(beforeDelete));
@@ -254,95 +237,47 @@ class DefaultDataSubmissionServiceTest {
         verifySingleUpdate(existing, RevisionKind.DELETE, "DELETE");
     }
 
+    /** A new submission gets an id, is persisted at version 0, and is recorded before its outbox row announces it. */
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    void mixedBatchWritesOnlyNewChangedAndFirstDelete() {
-        DataSubmission newSubmission = incomingSubmission("new00000001");
-
-        DataSubmission existingChanged = persistedSubmission(
-            "changed0001",
-            "01CHANGED0000000000000001");
-        DataSubmission incomingChanged = incomingSubmission("changed0001");
-        incomingChanged.setOrgUnitName("Changed Org Unit");
-
-        DataSubmission existingUnchanged = persistedSubmission(
-            "unchang0001",
-            "01UNCHANGED000000000000001");
-        DataSubmission incomingUnchanged = incomingSubmission("unchang0001");
-
-        DataSubmission existingFirstDelete = persistedSubmission(
-            "delete00001",
-            "01DELETE000000000000000001");
-        DataSubmission incomingFirstDelete = incomingSubmission("delete00001");
-        incomingFirstDelete.setDeleted(true);
-
-        Instant deletedAt = Instant.parse("2026-07-20T10:15:30Z");
-        DataSubmission existingDeletedRetry = persistedSubmission(
-            "deleted0001",
-            "01DELETED0000000000000001");
-        existingDeletedRetry.setDeleted(true);
-        existingDeletedRetry.setDeletedAt(deletedAt);
-        DataSubmission incomingDeletedRetry = incomingSubmission("deleted0001");
-        incomingDeletedRetry.setDeleted(true);
-        incomingDeletedRetry.setTeam("ignored-team");
-
-        when(repository.findAllByUidIn(any())).thenReturn(List.of(
-            existingChanged,
-            existingUnchanged,
-            existingFirstDelete,
-            existingDeletedRetry));
+    void aNewSubmissionIsPersistedAtVersionZeroAndRecordedBeforeItIsAnnounced() {
+        DataSubmission incoming = incomingSubmission("new00000001");
         persistStoresVersionZero();
-        updateReturnsInput();
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(
-            newSubmission,
-            incomingChanged,
-            incomingUnchanged,
-            incomingFirstDelete,
-            incomingDeletedRetry), summary, UPLOAD);
+        service.upsert(incoming, null, summary, UPLOAD);
 
-        ArgumentCaptor<List<DataSubmission>> persistCaptor =
-            ArgumentCaptor.forClass((Class) List.class);
+        ArgumentCaptor<List<DataSubmission>> persistCaptor = ArgumentCaptor.forClass((Class) List.class);
         verify(repository).persistAllAndFlush(persistCaptor.capture());
-        assertEquals(List.of(newSubmission), persistCaptor.getValue());
+        assertEquals(List.of(incoming), persistCaptor.getValue());
+        assertNotNull(incoming.getId());
+        verify(repository, never()).updateAllAndFlush(anyList());
 
-        ArgumentCaptor<List<DataSubmission>> updateCaptor =
-            ArgumentCaptor.forClass((Class) List.class);
-        verify(repository, times(2)).updateAllAndFlush(updateCaptor.capture());
-        assertEquals(List.of(existingChanged), updateCaptor.getAllValues().get(0));
-        assertEquals(List.of(existingFirstDelete), updateCaptor.getAllValues().get(1));
-
+        var recorded = org.mockito.Mockito.inOrder(revisions, outbox);
+        recorded.verify(revisions).append(incoming.getId(), 0L, null, RevisionKind.CREATE, UPLOAD);
         ArgumentCaptor<List<OutboxWritePort.OutboxInsert>> outboxCaptor =
             ArgumentCaptor.forClass((Class) List.class);
-        verify(outbox, times(3)).insert(outboxCaptor.capture());
-        List<OutboxWritePort.OutboxInsert> rows = outboxCaptor.getAllValues().stream().flatMap(List::stream).toList();
-        assertEquals(List.of("new00000001 SAVE 0", "changed0001 UPDATE 5", "delete00001 DELETE 5"), rows.stream()
+        recorded.verify(outbox).insert(outboxCaptor.capture());
+        assertEquals(List.of("new00000001 SAVE 0"), outboxCaptor.getValue().stream()
             .map(row -> row.submissionUid() + " " + row.eventType() + " " + row.submissionVersion()).toList());
-
-        // Each revision is written before the outbox row that names it.
-        var recorded = org.mockito.Mockito.inOrder(revisions, outbox);
-        recorded.verify(revisions).append(newSubmission.getId(), 0L, null, RevisionKind.CREATE, UPLOAD);
-        recorded.verify(outbox).insert(anyList());
-        recorded.verify(revisions).append("01CHANGED0000000000000001", STORED + 1, STORED, RevisionKind.UPDATE, UPLOAD);
-        recorded.verify(outbox).insert(anyList());
-        recorded.verify(revisions).append("01DELETE000000000000000001", STORED + 1, STORED, RevisionKind.DELETE, UPLOAD);
-        recorded.verify(outbox).insert(anyList());
-        org.mockito.Mockito.verifyNoMoreInteractions(revisions);
+        org.mockito.Mockito.verifyNoMoreInteractions(revisions, outbox);
 
         assertEquals(List.of("new00000001"), summary.getCreated());
-        assertEquals(List.of(
-            "changed0001",
-            "unchang0001",
-            "delete00001",
-            "deleted0001"), summary.getUpdated());
-        assertEquals(5, results.size());
-        assertSame(newSubmission, results.get(0));
-        assertSame(existingChanged, results.get(1));
-        assertSame(existingUnchanged, results.get(2));
-        assertSame(existingFirstDelete, results.get(3));
-        assertSame(existingDeletedRetry, results.get(4));
-        assertEquals(deletedAt, existingDeletedRetry.getDeletedAt());
+        assertTrue(summary.getUpdated().isEmpty());
+    }
+
+    /** The save writes the stored submission its caller locked, so that submission must be the incoming one. */
+    @Test
+    void theStoredSubmissionMustBeTheIncomingOne() {
+        DataSubmission other = persistedSubmission("other000001", "01OTHER00000000000000000001");
+        DataSubmission noUid = incomingSubmission(null);
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+            () -> service.upsert(incomingSubmission("mine0000001"), other, new EntitySaveSummaryVM(), UPLOAD));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+            () -> service.upsert(noUid, null, new EntitySaveSummaryVM(), UPLOAD));
+
+        verifyNoInteractions(repository, outbox, revisions);
     }
 
     @Test
@@ -371,11 +306,10 @@ class DefaultDataSubmissionServiceTest {
     void aNewSubmissionSentDeletedIsCreatedAndAnnouncedAsDeleted() {
         DataSubmission incoming = incomingSubmission("newdel00001");
         incoming.setDeleted(true);
-        when(repository.findAllByUidIn(any())).thenReturn(List.of());
         persistStoresVersionZero();
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        service.upsertAll(List.of(incoming), summary, UPLOAD);
+        service.upsert(incoming, null, summary, UPLOAD);
 
         assertEquals(List.of("newdel00001"), summary.getCreated());
         verify(revisions).append(incoming.getId(), 0L, null, RevisionKind.CREATE, UPLOAD);
@@ -392,11 +326,10 @@ class DefaultDataSubmissionServiceTest {
         DataSubmission existing = persistedSubmission("noflush0001", "01NOFLUSH0000000000000001");
         DataSubmission incoming = incomingSubmission("noflush0001");
         incoming.setActivity("changed-act");
-        findExisting(existing);
         when(repository.updateAllAndFlush(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        service.upsertAll(List.of(incoming), summary, UPLOAD);
+        service.upsert(incoming, existing, summary, UPLOAD);
 
         assertEquals(List.of("noflush0001"), summary.getUpdated());
         verify(repository).updateAllAndFlush(List.of(existing));
@@ -445,14 +378,12 @@ class DefaultDataSubmissionServiceTest {
         existing.setFormData(existingFormData);
         DataSubmission incoming = incomingSubmission("jsonnull001");
         incoming.setFormData(incomingFormData);
-        findExisting(existing);
         updateReturnsInput();
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
+        service.upsert(incoming, existing, summary, UPLOAD);
 
         assertEquals(List.of("jsonnull001"), summary.getUpdated(), transition);
-        assertSame(existing, results.get(0));
         if (expectsUpdate) {
             verifySingleUpdate(existing, RevisionKind.UPDATE, "UPDATE");
             assertEquals(incomingFormData, existing.getFormData());
@@ -511,10 +442,6 @@ class DefaultDataSubmissionServiceTest {
                     .set("nested", JsonNodeFactory.instance.objectNode().put("value", 1)),
                 false)
         );
-    }
-
-    private void findExisting(DataSubmission existing) {
-        when(repository.findAllByUidIn(any())).thenReturn(List.of(existing));
     }
 
     /** A flush raises the version of each submission it updates, as Hibernate does. */

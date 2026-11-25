@@ -7,7 +7,6 @@ import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.stereotype.Component;
 
@@ -28,16 +27,15 @@ import java.util.Objects;
 @Component
 @RequiredArgsConstructor
 public class StoredSubmissionGuard {
-    private final DataSubmissionRepository submissions;
     private final AssignmentRepository assignments;
     private final AssignmentFormAccessService formAccess;
 
-    public void check(DataSubmission incoming, CurrentUserDetails user) {
-        if (user.isSuper() || incoming.getUid() == null) {
-            return;
-        }
-        DataSubmission stored = submissions.findByUid(incoming.getUid()).orElse(null);
-        if (stored == null) {
+    /**
+     * @param stored the stored submission with the incoming uid, as the upload's transaction took it under the
+     *               submission lock, or null when there is none: a new submission is not checked here
+     */
+    public void check(DataSubmission incoming, DataSubmission stored, CurrentUserDetails user) {
+        if (user.isSuper() || stored == null) {
             return;
         }
         if (!Objects.equals(stored.getForm(), incoming.getForm())) {

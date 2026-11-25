@@ -35,7 +35,6 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -72,11 +71,12 @@ class LegacyUploadAccessTest {
 
         DataSubmissionService submissionService = mock(DataSubmissionService.class);
         doAnswer(invocation -> {
-            List<DataSubmission> saved = invocation.getArgument(0);
-            EntitySaveSummaryVM summary = invocation.getArgument(1);
-            saved.forEach(submission -> summary.getCreated().add(submission.getUid()));
-            return saved;
-        }).when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
+            DataSubmission saved = invocation.getArgument(0);
+            EntitySaveSummaryVM summary = invocation.getArgument(2);
+            summary.getCreated().add(saved.getUid());
+            return null;
+        }).when(submissionService).upsert(any(DataSubmission.class), any(), any(EntitySaveSummaryVM.class),
+            any(RevisionContext.class));
 
         PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
         when(transactionManager.getTransaction(any(TransactionDefinition.class)))
@@ -93,7 +93,8 @@ class LegacyUploadAccessTest {
             mock(ReferenceSubmissionResolver.class),
             transactionManager,
             mock(SubmissionIntake.class),
-            new StoredSubmissionGuard(mock(DataSubmissionRepository.class), assignments, formAccess));
+            new StoredSubmissionGuard(assignments, formAccess),
+            mock(DataSubmissionRepository.class));
     }
 
     @Test
