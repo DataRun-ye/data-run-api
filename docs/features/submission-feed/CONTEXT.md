@@ -40,6 +40,12 @@ A record with `deleted = true`: a deleted submission, or a row no longer in its 
 its last values. _Tombstone_ in prose only.
 _Avoid_: tombstone as a name, or in Kafka's sense (a record with a null value); void; removed record
 
+**Reader role**:
+Downstream's database role, which Airbyte reads schema `feed` as, named by the setting `datarun.feed.reader-role`. At
+every start the grants on `feed` converge to it: USAGE on the schema, SELECT on its tables and on tables added later,
+and nothing for any other role. With no role named, no grant is made or revoked.
+_Avoid_: Airbyte role (the role is downstream's to name), reading role, feed user
+
 ### What a record holds
 
 **Submission**:
@@ -152,6 +158,12 @@ Downstream's re-read of a stream in Airbyte ("Refresh and Retain Records").
 
 **Crosswalk**:
 The published map from analytics' `canonical_element_id` to `field_id`, for re-pointing existing models.
+
+**Agreement harness**:
+The check, counts only, that the submission normalizer agrees with the feed spike's oracle on every head of the
+journal: mapped values by field id, unmapped values by data path, rows by id, and the form and form version. It runs
+read-only on a restored clone the operator names (`scripts/feed/agreement.sh`), before the feed is switched on.
+_Avoid_: reconcile (the publisher's), integrity check (`scripts/integrity`), verification
 
 ## Words to avoid
 
