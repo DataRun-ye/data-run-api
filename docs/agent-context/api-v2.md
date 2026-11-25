@@ -253,7 +253,9 @@ Deploying a release and turning on what it brings are separate steps
   requires. E0 declares none: the later steps declare theirs with the
   glossary's words, and the activation order the design note sets becomes
   their requirements, so a feature cannot be turned on before what makes it
-  safe.
+  safe. The first declared is submission review's `conflict-detection`
+  (`ConflictDetectionSwitch`, step S2), which the upload routes read; it
+  requires none.
 - `ActivationSwitches` reads `datarun.activation.<name>` once at startup.
   Nothing is on by default, anywhere. A switch whose requirement is off stays
   off (ERROR line); a value other than true or false, or a setting no switch
@@ -262,7 +264,9 @@ Deploying a release and turning on what it brings are separate steps
   logged at startup.
 - In production a switch is set in the host environment, for example
   `DATARUN_ACTIVATION_SOME_FEATURE=true` passed by `compose.yml`, and the
-  container recreated; setting it back to false is the rollback.
+  container recreated; setting it back to false is the rollback. Neither
+  compose file passes a `DATARUN_ACTIVATION_*` variable yet: turning a switch
+  on adds it to the service's `environment` list.
 - A v2 handler calls `requireMethod` for a whole method behind a switch (422
   `method-not-enabled`) or `requireOperation` for one kind of operation in a
   request (422 `operation-not-enabled`); either names its switch.

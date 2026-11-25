@@ -208,6 +208,28 @@ queued). A new submission has nothing to lock: a second save of its uid still
 fails on the uid's unique constraint (below). `SubmissionWriteOwnershipTest`
 keeps the submission lock to the command service and its persistence layer.
 
+Conflict detection (submission review, step S2; `jpa.datasubmission.conflict`)
+is behind the activation switch `conflict-detection`, off by default, and off
+both upload routes run exactly as described here: the A2 goldens prove it. On,
+`ConflictDetection` reads each live upload item of a stored submission right
+after the submission lock, before the upload checks and, on the legacy route,
+before row ids are minted. It tags a phone copy whose rows lack ids, finds the
+uploader's base version in the journal, and compares the copy structurally
+(`ConflictComparison`: rows' structure keys left out, numbers by value, with
+the deleted flag, assignment and form version). An unchanged re-send, or a copy
+equal to the current state, writes nothing. After a server-side change since
+the base version, a changed copy is kept aside in `submission_review.conflict`
+(one open conflict per submission and uploader); after a move, so is a changed
+copy the checks refuse for access (E4124, E4114, E4122). An uploader without a
+base of their own is checked first and refused as today. Each such upload item
+is answered `updated`, and detection never fails one: an error in it keeps the
+copy aside with cause `DETECTION_ERROR`. Practice uploads and held releases are
+not detected. The journal accepts submission review's commands since changeset
+`20261125-s2-01`, but no release writes them yet, so today's server-side
+changes are admin deletes and the gap repair's deleted baselines.
+`ConflictDetectionRehearsalIT` rehearses detection on a database the operator
+names, counts only, and changes nothing there.
+
 `data_submission`'s indexes: the primary key, the unique keys on `uid` and
 `serial_number`, `idx_ds_form_assignment`, and two that only the generic read
 surface would use, when an admin filters `/objects` or `/query` by org unit
@@ -342,7 +364,9 @@ version 0 and each flushed change raises it by one (JPA `@Version`, which
 counts changes only because `SubmissionCommandService` is the only writer).
 Whatever a write persists is a change, copied labels included (a re-send
 after a village rename is an `UPDATE` with the new name); an unchanged
-re-send writes nothing. `DefaultDataSubmissionService` reads the versions
+re-send writes nothing. With `conflict-detection` on, a copy equal to its base
+version's state or to the current state writes nothing at all, so it no longer
+refreshes copied labels. `DefaultDataSubmissionService` reads the versions
 back after each flush and writes, in the same transaction, the revision and
 then one outbox row naming it (`SubmissionRevisionWriter`, the only writer).
 
@@ -364,6 +388,7 @@ changes after creation (form, entry times, creation time).
 | Re-send that changes anything persisted | `UPDATE` v+1 | uploader | | | `UPDATE`, or `DELETE` if the record stays deleted |
 | `deleted=true` on a live record | `DELETE` v+1 | uploader | | | `DELETE` |
 | Unchanged re-send, or `deleted=true` on a deleted record | none | | | | none |
+| `conflict-detection` on: an upload item that changes nothing, or a phone copy kept aside as a conflict | none | | | | none |
 | Admin delete | `DELETE` v+1, `ADMIN_DELETE` | admin | | | `DELETE` |
 | Held release | `CREATE` at 0, `HELD_RELEASE` | admin | uploader | release note | `SAVE` 0 |
 | Held or practice upload, discard, superseded or changed release | none | | | | none |
