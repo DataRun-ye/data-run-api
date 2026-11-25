@@ -240,12 +240,18 @@ public class SubmissionUploads {
                 try {
                     checkLegacy(submission, stored, template, actor);
                 } catch (ErrorCodeException refusal) {
-                    if (conflict.keptAsideOnRefusal(refusal.getErrorCode())) {
-                        return answeredUpdated(submission, summary);
+                    if (!conflict.keepsAsideOnRefusal(refusal.getErrorCode())) {
+                        throw refusal;
                     }
-                    throw refusal;
+                    conflict.keepAside();
+                    return answeredUpdated(submission, summary);
                 }
-                if (conflict.afterChecks() != ConflictCheck.Outcome.APPLY) {
+                ConflictCheck.Outcome outcome = conflict.afterChecks();
+                if (outcome != ConflictCheck.Outcome.APPLY) {
+                    // The legacy route checks no Reference value: nothing else to refuse.
+                    if (outcome == ConflictCheck.Outcome.KEEP_ASIDE) {
+                        conflict.keepAside();
+                    }
                     return answeredUpdated(submission, summary);
                 }
                 submissionService.upsert(submission, stored, summary, revision);
@@ -279,12 +285,24 @@ public class SubmissionUploads {
         try {
             authorize(submission, stored, assignment, actor.access(), assignment.getTeam().getUid());
         } catch (ErrorCodeException refusal) {
-            if (conflict.keptAsideOnRefusal(refusal.getErrorCode())) {
-                return answeredUpdated(submission, summary);
+            if (!conflict.keepsAsideOnRefusal(refusal.getErrorCode())) {
+                throw refusal;
             }
-            throw refusal;
+            try {
+                checkReferences(submission, assignment, template, request);
+            } catch (ErrorCodeException referenceRefusal) {
+                // Refused for access today, before its Reference values were read: it stays refused so.
+                throw refusal;
+            }
+            conflict.keepAside();
+            return answeredUpdated(submission, summary);
         }
-        if (conflict.afterChecks() != ConflictCheck.Outcome.APPLY) {
+        ConflictCheck.Outcome outcome = conflict.afterChecks();
+        if (outcome != ConflictCheck.Outcome.APPLY) {
+            checkReferences(submission, assignment, template, request);
+            if (outcome == ConflictCheck.Outcome.KEEP_ASIDE) {
+                conflict.keepAside();
+            }
             return answeredUpdated(submission, summary);
         }
         IntakeDecision decision = intake.decide(
@@ -314,6 +332,17 @@ public class SubmissionUploads {
             submission.getAssignment(),
             submission.getFormVersion(),
             submission.getStatus() == null ? null : submission.getStatus().name()));
+    }
+
+    /**
+     * The Reference checks of a copy the upload will not save, against its own assignment, in the save's order (row ids
+     * first): a refusal stays a refusal (E4117 to E4121), as today, and no entry is created, so a copy kept aside
+     * creates nothing until it is accepted.
+     */
+    private void checkReferences(DataSubmission submission, Assignment assignment, TemplateVersionContext template,
+                                 DataSubmissionUploadV1Dto request) {
+        generateMissingRepeatIds(submission, template);
+        referenceResolver.check(submission, assignment, template.getTemplate(), request.getReferenceDefinitions());
     }
 
     /** The upload item is answered {@code updated}, as an unchanged re-send always was, and nothing is written. */

@@ -31,6 +31,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G0;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G1;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G3;
+import static org.nmcpye.datarun.characterization.a2.A2Payloads.households;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.item;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.ordinary;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.uid;
@@ -42,6 +43,9 @@ import static org.nmcpye.datarun.characterization.a2.A2Seed.EDITOR;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.FIELD_1;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.FIELD_2;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.FORM_A;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.FORM_R;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.HOUSE_V1;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.HOUSE_V2;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.version;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -308,6 +312,45 @@ class ConflictDetectionIT extends A2GoldenSupport {
         assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 BASELINE GAP_REPAIR");
         assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
             .containsEntry("cause", "SERVER_SIDE_CHANGE").containsEntry("base_version", 0L));
+    }
+
+    // ---------------------------------------------------------------- Reference values
+
+    /**
+     * After an admin delete a changed copy would be kept aside, but the Reference checks come first, against the copy's
+     * own assignment, so their refusals stand as today: an entry twice in a field (E4118) and an entry of another org
+     * unit (E4119), for field1, whose base it is, and for an admin, who has none. A copy that passes them is kept aside
+     * and creates no entry.
+     */
+    @Test
+    void referenceRefusalsStandBeforeACopyIsKeptAside() throws Exception {
+        String uid = uid("cdRefs");
+        String reference = version("FORM_R.v1");
+        assertThat(answer(upload(G3, FIELD_1, item(G3, uid, FORM_R, reference, ASSIGN_T1_V1,
+            households(G3, uid, HOUSE_V1))))).isEqualTo(created(uid));
+        assertThat(adminDelete(uid).getStatus()).isEqualTo(204);
+
+        for (String uploader : List.of(FIELD_1, ADMIN)) {
+            assertThat(answer(upload(G3, uploader, item(G3, uid, FORM_R, reference, ASSIGN_T1_V1,
+                households(G3, uid, HOUSE_V1, HOUSE_V1)))))
+                .as(uploader + ", an entry twice in a field")
+                .startsWith("200 created=[] updated=[] failed={\"" + uid + "\":\"E4118: ");
+            assertThat(answer(upload(G3, uploader, item(G3, uid, FORM_R, reference, ASSIGN_T1_V1,
+                households(G3, uid, HOUSE_V2)))))
+                .as(uploader + ", an entry of another org unit")
+                .startsWith("200 created=[] updated=[] failed={\"" + uid + "\":\"E4119: ");
+        }
+        assertThat(conflicts(uid)).isEmpty();
+
+        String newHouse = "a2HouseCdK1";
+        assertThat(answer(upload(G3, FIELD_1, item(G3, uid, FORM_R, reference, ASSIGN_T1_V1,
+            households(G3, uid, HOUSE_V1, newHouse)).definitions(newHouse, "Echo Foxtrot Golf Hotel"))))
+            .isEqualTo(updated(uid));
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("cause", "SERVER_SIDE_CHANGE").containsEntry("uploader_user_id", seed.userId(FIELD_1)));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM reference_entry WHERE uid = :uid",
+            Map.of("uid", newHouse), Integer.class)).as("no entry until the copy is accepted").isZero();
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 DELETE ADMIN_DELETE");
     }
 
     // ---------------------------------------------------------------- after a move

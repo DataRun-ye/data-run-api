@@ -530,19 +530,21 @@ public final class ConflictRehearsal implements AutoCloseable {
                 return "changes nothing, before the checks";
             }
             if (refusal != null) {
-                return check.keptAsideOnRefusal(refusal) ? kept() : "refusal stands";
+                return check.keepsAsideOnRefusal(refusal) ? kept(check) : "refusal stands";
             }
             return switch (check.afterChecks()) {
                 case NOTHING -> "changes nothing, after the checks";
                 case APPLY -> head.deleted() ? "applies as today (submission deleted)" : "applies as today";
-                case KEPT_ASIDE -> kept();
+                case KEEP_ASIDE -> kept(check);
             };
         } catch (RuntimeException failure) {
             return "failed: " + FailureShape.of(failure);
         }
     }
 
-    private String kept() {
+    /** Keeps the copy aside, which the counting store only counts; the Reference checks are not rehearsed. */
+    private String kept(ConflictCheck check) {
+        check.keepAside();
         CountingStore.Kept kept = store.last();
         if (kept == null) {
             return "kept aside, nothing stored";

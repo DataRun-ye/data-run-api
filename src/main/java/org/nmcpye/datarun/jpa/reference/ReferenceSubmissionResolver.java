@@ -37,6 +37,31 @@ public class ReferenceSubmissionResolver {
         Assignment assignment,
         DataTemplateInstanceDto template,
         Collection<ReferenceDefinitionV1Dto> suppliedDefinitions) {
+        List<ReferenceEntry> entriesToCreate = checked(submission, assignment, template, suppliedDefinitions);
+        if (!entriesToCreate.isEmpty()) {
+            referenceEntryRepository.persistAllAndFlush(entriesToCreate);
+        }
+    }
+
+    /**
+     * The checks of {@link #resolve}, against the given assignment, with its refusals (E4117 to E4121), but creating no
+     * entry: conflict detection runs them before it keeps a copy aside, so a refusal stays a refusal while a copy kept
+     * aside creates nothing until it is accepted.
+     */
+    public void check(
+        DataSubmission submission,
+        Assignment assignment,
+        DataTemplateInstanceDto template,
+        Collection<ReferenceDefinitionV1Dto> suppliedDefinitions) {
+        checked(submission, assignment, template, suppliedDefinitions);
+    }
+
+    /** Checks the submission's Reference values; returns the entries its new values would create. */
+    private List<ReferenceEntry> checked(
+        DataSubmission submission,
+        Assignment assignment,
+        DataTemplateInstanceDto template,
+        Collection<ReferenceDefinitionV1Dto> suppliedDefinitions) {
         List<ReferenceValueOccurrence> occurrences = valueExtractor.extract(
             submission.getUid(),
             template,
@@ -58,7 +83,7 @@ public class ReferenceSubmissionResolver {
                     uid);
             });
         if (usedUids.isEmpty()) {
-            return;
+            return List.of();
         }
 
         if (assignment.getOrgUnit() == null || assignment.getActivity() == null) {
@@ -95,9 +120,7 @@ public class ReferenceSubmissionResolver {
             created.setFirstRegisteredActivity(assignment.getActivity());
             entriesToCreate.add(created);
         }
-        if (!entriesToCreate.isEmpty()) {
-            referenceEntryRepository.persistAllAndFlush(entriesToCreate);
-        }
+        return entriesToCreate;
     }
 
     private Map<String, String> definitionsByUid(

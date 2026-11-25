@@ -11,7 +11,7 @@ import java.util.Set;
  *       copy) changes nothing;</li>
  *   <li>a copy equal to the current state changes nothing;</li>
  *   <li>after a server-side {@code MOVE} later than the base version, a copy the upload checks refuse for access
- *       (E4124, E4114 or E4122) is kept aside as a conflict ({@link #keptAsideOnRefusal});</li>
+ *       (E4124, E4114 or E4122) is kept aside as a conflict ({@link #keepsAsideOnRefusal});</li>
  *   <li>a server-side change after the base version keeps the copy aside as a conflict;</li>
  *   <li>otherwise the upload applies as today.</li>
  * </ol>
@@ -21,6 +21,9 @@ import java.util.Set;
  * nothing when it equals the current state or their last decided conflict copy; otherwise it takes the submission's
  * first revision as its base, so a server-side change since then keeps it aside, and without one it applies as today
  * ({@link #afterChecks}). Whatever it decides, the phone is answered {@code updated}.
+ *
+ * <p>The decisions store nothing: the upload runs its own remaining checks on a copy it will not save (the Reference
+ * checks, which create no entry then), and only then stores the conflict ({@link #keepAside}).</p>
  */
 public final class ConflictCheck {
 
@@ -33,8 +36,8 @@ public final class ConflictCheck {
         APPLY,
         /** Writes nothing: the copy changes nothing. */
         NOTHING,
-        /** Writes nothing: the copy is kept aside, and its conflict is stored. */
-        KEPT_ASIDE
+        /** Writes nothing to the submission: the copy is to be kept aside ({@link #keepAside}). */
+        KEEP_ASIDE
     }
 
     /** Detection does not run: switched off, a new submission, or a practice upload or a release. */
@@ -92,38 +95,41 @@ public final class ConflictCheck {
     }
 
     /**
-     * When the upload checks refuse the copy: whether it is kept aside instead. Only for an uploader with a base
-     * version of their own, after a server-side {@code MOVE} later than it, and only for the access refusals a move
-     * causes (E4124, E4114, E4122); any other refusal, and every refusal when detection failed, stays a refusal.
-     * Keeping it aside stores its conflict here, in the upload item's transaction.
+     * When the upload checks refuse the copy for access: whether it is to be kept aside instead. Only for an uploader
+     * with a base version of their own, after a server-side {@code MOVE} later than it, and only for the access
+     * refusals a move causes (E4124, E4114, E4122); any other refusal, and every refusal when detection failed, stays
+     * a refusal.
      */
-    public boolean keptAsideOnRefusal(ErrorCode refusal) {
-        if (analysis == null || !analysis.ownBase() || !analysis.moved() || !MOVE_REFUSALS.contains(refusal)) {
-            return false;
-        }
-        detection.keepAside(context, ConflictCause.SERVER_SIDE_CHANGE, analysis.base(), rowsLackIds);
-        return true;
+    public boolean keepsAsideOnRefusal(ErrorCode refusal) {
+        return analysis != null && analysis.ownBase() && analysis.moved() && MOVE_REFUSALS.contains(refusal);
     }
 
-    /**
-     * Once the upload checks have passed: whether to apply the copy, write nothing, or keep it aside. Keeping it aside
-     * stores its conflict here, in the upload item's transaction.
-     */
+    /** Once the upload checks have passed: whether to apply the copy, write nothing, or keep it aside. */
     public Outcome afterChecks() {
         if (context == null) {
             return Outcome.APPLY;
         }
         if (analysis == null) {
-            detection.keepAside(context, ConflictCause.DETECTION_ERROR, null, rowsLackIds);
-            return Outcome.KEPT_ASIDE;
+            return Outcome.KEEP_ASIDE;
         }
         if (!analysis.ownBase() && (analysis.unchangedResend() || analysis.equalsCurrent())) {
             return Outcome.NOTHING;
         }
-        if (analysis.serverSideChange()) {
-            detection.keepAside(context, ConflictCause.SERVER_SIDE_CHANGE, analysis.base(), rowsLackIds);
-            return Outcome.KEPT_ASIDE;
+        return analysis.serverSideChange() ? Outcome.KEEP_ASIDE : Outcome.APPLY;
+    }
+
+    /**
+     * Keeps the copy aside, once the upload's own checks are done: opens its conflict, or counts or replaces the open
+     * one, in the upload item's transaction. Its cause is {@code DETECTION_ERROR} when detection failed.
+     */
+    public void keepAside() {
+        if (context == null) {
+            throw new IllegalStateException("Detection did not run: there is no copy to keep aside");
         }
-        return Outcome.APPLY;
+        if (analysis == null) {
+            detection.keepAside(context, ConflictCause.DETECTION_ERROR, null, rowsLackIds);
+        } else {
+            detection.keepAside(context, ConflictCause.SERVER_SIDE_CHANGE, analysis.base(), rowsLackIds);
+        }
     }
 }

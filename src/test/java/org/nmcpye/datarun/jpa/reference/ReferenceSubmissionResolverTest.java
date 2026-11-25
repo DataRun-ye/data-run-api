@@ -229,6 +229,27 @@ class ReferenceSubmissionResolverTest {
                 submission, assignment, template, List.of()));
     }
 
+    /** What conflict detection runs before it keeps a copy aside: the same refusals, and no entry created. */
+    @Test
+    void checkRefusesAsResolveDoesButCreatesNoEntry() {
+        extracted("fieldId", "b1234567890");
+        when(referenceEntryRepository.findAllByUidIn(
+            Set.of("b1234567890")))
+            .thenReturn(List.of());
+
+        resolver.check(
+            submission,
+            assignment,
+            template,
+            List.of(definition("b1234567890", "Ahmed Ali Saleh Hassan")));
+        verify(referenceEntryRepository, never()).persistAllAndFlush(any());
+
+        assertThrows(
+            DomainValidationException.class,
+            () -> resolver.check(submission, assignment, template, List.of()));
+        verify(referenceEntryRepository, never()).persistAllAndFlush(any());
+    }
+
     @Test
     void rejectsMalformedUidBeforeReadingCatalog() {
         extracted("fieldId", "invalid");
