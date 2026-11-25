@@ -38,13 +38,41 @@ class FormDefinitionTest {
     }
 
     @Test
-    void aFieldWhoseDataElementHasNoIdIsRefused() {
-        assertThatThrownBy(() -> FormVersionDefinition.parse(FORM, "01JV0000000000000000000001", "fvUid000001", 1,
+    void aFieldWhoseDataElementIsGoneIsKeptWithoutAnId() {
+        FormVersionDefinition v = FormVersionDefinition.parse(FORM, "01JV0000000000000000000001", "fvUid000001", 1,
             StoredForms.json("[]"),
             StoredForms.json("[{'id': 'deUidNoId00', 'name': 'x', 'path': 'deUidNoId00', 'type': 'Text'}]"),
-            uid -> null))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("deUidNoId00");
+            uid -> null);
+
+        assertThat(v.fields()).containsExactly(new FieldDefinition(null, "x", null, ValueType.Text));
+    }
+
+    @Test
+    void malformedStoredDefinitionsAreReadAsFarAsTheyGo() {
+        FormVersionDefinition v = FormVersionDefinition.parse(FORM, "01JV0000000000000000000001", "fvUid000001", 1,
+            StoredForms.json("{'not': 'an array'}"),
+            StoredForms.json("[3, {'name': 'no id'}, {'id': 'deUidNoName'}, null]"),
+            uid -> "01JD0000000000000000000001");
+
+        assertThat(v.sections()).isEmpty();
+        assertThat(v.fields()).isEmpty();
+    }
+
+    @Test
+    void withoutAPinnedVersionAPathResolvesThroughTheNewestVersionThatCanHoldIt() {
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+            .section("stock", false).field("deUidCount1", null, "count", "Text").build(FORM);
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+            .section("stock", true).field("deUidCount1", null, "count", "Integer").build(FORM);
+        FormDefinition form = FormDefinition.of(FORM, List.of(v1, v2));
+
+        FormDefinition.Resolution count = form.resolve(null, "count", StoredShape.LEAF);
+        assertThat(count.version()).isSameAs(v2);
+        assertThat(count.fromPinnedVersion()).isFalse();
+        assertThat(form.resolve(null, "stock", StoredShape.OBJECT).version()).isSameAs(v1);
+        assertThat(form.resolve(null, "stock", StoredShape.ROWS).version()).isSameAs(v2);
+        assertThat(form.resolve(null, "elsewhere", StoredShape.LEAF)).isNull();
+        assertThat(FormDefinition.NO_VERSIONS.resolve(null, "count", StoredShape.LEAF)).isNull();
     }
 
     @Test

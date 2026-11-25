@@ -45,9 +45,9 @@ public record FormVersionDefinition(
      * @param number        the version number
      * @param sections      the stored {@code sections} array
      * @param fields        the stored {@code fields} array
-     * @param fieldIdForUid the stored id of the data element with a given uid; each field's {@code id} is a data
-     *                      element uid
-     * @throws IllegalArgumentException when a field names a data element uid that has no id
+     * @param fieldIdForUid the stored id of the data element with a given uid, or {@code null} when there is none;
+     *                      each field's {@code id} is a data element uid. A field whose data element has no id is
+     *                      kept without an id, and its values are then unmapped, never refused
      */
     public static FormVersionDefinition parse(
         String formId,
@@ -80,10 +80,6 @@ public record FormVersionDefinition(
                     continue;
                 }
                 String fieldId = fieldIdForUid.apply(dataElementUid);
-                if (fieldId == null) {
-                    throw new IllegalArgumentException(
-                        "form version " + id + " has a field whose data element uid " + dataElementUid + " has no id");
-                }
                 String storedPath = text(field.get("path"));
                 String sectionPath = storedPath == null || storedPath.equals(dataElementUid) || storedPath.indexOf('.') < 0
                     ? null

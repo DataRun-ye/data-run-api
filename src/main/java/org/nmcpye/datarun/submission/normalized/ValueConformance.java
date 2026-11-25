@@ -56,7 +56,7 @@ final class ValueConformance {
             case Text, LongText, Letter, FullName, PhoneNumber, Email, URL, Username, ScannedCode, SelectOne, Team,
                  OrganisationUnit, Activity, Entity, Progress, Reference, Image, FileResource ->
                 value.isTextual() ? null : ValueIssue.NOT_TEXT;
-            case Number, Percentage, UnitInterval -> value.isNumber() ? null : ValueIssue.NOT_A_NUMBER;
+            case Number, Percentage, UnitInterval -> finiteNumber(value) ? null : ValueIssue.NOT_A_NUMBER;
             case Integer -> integer(value, Sign.ANY);
             case IntegerPositive -> integer(value, Sign.POSITIVE);
             case IntegerNegative -> integer(value, Sign.NEGATIVE);
@@ -73,8 +73,13 @@ final class ValueConformance {
 
     private enum Sign { ANY, POSITIVE, NEGATIVE, ZERO_OR_POSITIVE }
 
+    /** A JSON number; a floating-point node that is not finite (built in code, never parsed) is none. */
+    private static boolean finiteNumber(JsonNode value) {
+        return value.isNumber() && !(value.isFloatingPointNumber() && !Double.isFinite(value.doubleValue()));
+    }
+
     private static ValueIssue integer(JsonNode value, Sign sign) {
-        if (!value.isNumber()) {
+        if (!finiteNumber(value)) {
             return ValueIssue.NOT_AN_INTEGER;
         }
         BigDecimal number = value.decimalValue();

@@ -54,9 +54,10 @@ public class FormDefinitionJdbcReader {
     }
 
     /**
-     * The definitions of the forms with these uids, by form uid; a uid that names no form has no entry.
-     *
-     * @throws IllegalArgumentException when a stored field names a data element that does not exist
+     * The definitions of the forms with these uids, by form uid. A uid that names no form has no entry: the caller
+     * then normalizes with no definition ({@link org.nmcpye.datarun.submission.normalized.NormalizationFlag#FORM_MISSING}).
+     * A stored field whose data element no longer exists is kept without an id; nothing in the stored definitions
+     * makes the read fail.
      */
     public Map<String, FormDefinition> read(Collection<String> formUids) {
         if (formUids.isEmpty()) {

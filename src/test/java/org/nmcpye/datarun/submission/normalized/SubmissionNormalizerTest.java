@@ -2,6 +2,7 @@ package org.nmcpye.datarun.submission.normalized;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 
@@ -11,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.nmcpye.datarun.submission.normalized.StoredForms.fieldId;
 import static org.nmcpye.datarun.submission.normalized.StoredForms.json;
@@ -307,23 +308,106 @@ class SubmissionNormalizerTest {
     }
 
     @Test
-    void aDocumentThatIsNotAnObjectIsUnmappedWholeAndAMissingOneIsEmpty() {
-        assertThat(normalize("['a']").unmapped())
-            .extracting(UnmappedValue::path, UnmappedValue::reason)
-            .containsExactly(tuple("", UnmappedReason.PATH_NOT_IN_FORM));
+    void aDocumentThatIsNotAnObjectIsUnmappedWholeAndFlagged_andAMissingOneIsEmpty() {
+        NormalizedSubmission array = normalize("['a']");
+        assertThat(array.unmapped())
+            .extracting(UnmappedValue::path, UnmappedValue::reason, u -> u.value().toString())
+            .containsExactly(tuple("", UnmappedReason.DOCUMENT_NOT_AN_OBJECT, "[\"a\"]"));
+        assertThat(array.flags()).containsExactly(entry(NormalizationFlag.DOCUMENT_NOT_AN_OBJECT, 1));
         NormalizedSubmission missing = SubmissionNormalizer.normalize(
             new StoredSubmission(SUBMISSION, "fvUid000002", null), FORM_DEFINITION);
         assertThat(missing.values()).isEmpty();
         assertThat(missing.unmapped()).isEmpty();
         assertThat(missing.rows()).isEmpty();
+        assertThat(missing.flags()).isEmpty();
     }
 
     @Test
-    void aSubmissionPinnedToAVersionTheFormDoesNotHaveIsRefused() {
-        assertThatThrownBy(() -> SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, "fvUidOther0", json("{}")), FORM_DEFINITION))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining(SUBMISSION);
+    void aSubmissionWhosePinnedVersionIsGoneResolvesThroughTheFormsOtherVersions() {
+        NormalizedSubmission normalized = SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, "fvUidGone00",
+            json("{'title': 'T', 'details': {'old_note': 'n', 'nowhere': 1}, 'items': [{'count': 2}]}")),
+            FORM_DEFINITION);
+
+        assertThat(normalized.formId()).isEqualTo(FORM);
+        assertThat(normalized.formVersionId()).isNull();
+        assertThat(normalized.values())
+            .extracting(FieldValue::path, FieldValue::formVersionId, FieldValue::fromPinnedVersion)
+            .containsExactly(tuple("details.old_note", V1.id(), false), tuple("title", V2.id(), false));
+        assertThat(normalized.rows()).extracting(r -> r.values().get(0).formVersionId()).containsExactly(V2.id());
+        assertThat(normalized.unmapped()).extracting(UnmappedValue::path, UnmappedValue::reason)
+            .containsExactly(tuple("details.nowhere", UnmappedReason.PATH_NOT_IN_FORM));
+        assertThat(normalized.flags()).containsOnly(
+            entry(NormalizationFlag.PINNED_VERSION_MISSING, 1), entry(NormalizationFlag.PATH_NOT_IN_FORM, 1));
+        assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, null, json("{'title': 'T'}")),
+            FORM_DEFINITION).flagged(NormalizationFlag.PINNED_VERSION_MISSING)).isEqualTo(1);
+    }
+
+    @Test
+    void withoutAStoredDefinitionOfTheFormEveryValueIsUnmappedAndFlagged() {
+        NormalizedSubmission normalized = SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, "fvUid000002",
+            json("{'title': 'T', 'details': {'visit_day': '2026-12-03'}, 'items': [{'_id': 'x', 'count': 2}]}")), null);
+
+        assertThat(normalized.formId()).isNull();
+        assertThat(normalized.formVersionId()).isNull();
+        assertThat(normalized.values()).isEmpty();
+        assertThat(normalized.rows()).isEmpty();
+        assertThat(normalized.unmapped()).extracting(UnmappedValue::path, UnmappedValue::reason)
+            .containsExactly(
+                tuple("details.visit_day", UnmappedReason.PATH_NOT_IN_FORM),
+                tuple("items", UnmappedReason.PATH_NOT_IN_FORM),
+                tuple("title", UnmappedReason.PATH_NOT_IN_FORM));
+        assertThat(normalized.flags()).containsOnly(entry(NormalizationFlag.FORM_MISSING, 1),
+            entry(NormalizationFlag.PINNED_VERSION_MISSING, 1), entry(NormalizationFlag.PATH_NOT_IN_FORM, 3));
+    }
+
+    @Test
+    void aValueOfAFieldWhoseDataElementIsGoneIsUnmappedAndFlagged() {
+        FormVersionDefinition version = FormVersionDefinition.parse(FORM, "01JV0000000000000000000007", "fvUid000007",
+            7, json("[]"), json("[{'id': 'deUidGone001', 'name': 'gone', 'path': 'deUidGone001', 'type': 'Text'}]"),
+            uid -> null);
+        NormalizedSubmission normalized = SubmissionNormalizer.normalize(
+            new StoredSubmission(SUBMISSION, "fvUid000007", json("{'gone': 'kept'}")),
+            FormDefinition.of(FORM, List.of(version)));
+
+        assertThat(normalized.values()).isEmpty();
+        assertThat(normalized.unmapped()).extracting(UnmappedValue::path, UnmappedValue::reason)
+            .containsExactly(tuple("gone", UnmappedReason.FIELD_WITHOUT_ID));
+        assertThat(normalized.flags()).containsExactly(entry(NormalizationFlag.FIELD_WITHOUT_ID, 1));
+    }
+
+    @Test
+    void nestingDeeperThanTheWalkGoesIsKeptWholeAndFlagged() {
+        // 1,000 levels, the most a document parsed by Jackson can hold
+        ObjectNode document = StoredForms.JSON.createObjectNode();
+        ObjectNode level = document.putObject("ghost");
+        for (int i = 1; i < 1_000; i++) {
+            level = level.putObject("k");
+        }
+        level.put("leaf", 1);
+
+        NormalizedSubmission normalized = SubmissionNormalizer.normalize(
+            new StoredSubmission(SUBMISSION, "fvUid000002", document), FORM_DEFINITION);
+
+        assertThat(normalized.unmapped()).hasSize(1);
+        UnmappedValue deep = normalized.unmapped().get(0);
+        assertThat(deep.reason()).isEqualTo(UnmappedReason.NESTED_TOO_DEEP);
+        assertThat(deep.path().split("\\.")).hasSize(SubmissionNormalizer.MAX_DEPTH + 1);
+        assertThat(normalized.flags()).containsExactly(entry(NormalizationFlag.NESTED_TOO_DEEP, 1));
+    }
+
+    @Test
+    void flagsCountWhatTheDataHeld() {
+        NormalizedSubmission normalized = normalize("""
+            {'loose': 7, 'ghost': {'a': 1, 'b': 2}, 'other': [], 'items': {'count': 1},
+             'details': {'visit_day': 'not a date', 'choices': 'not a list', 'more': {'amount': 2}}}""");
+
+        assertThat(normalized.flags()).containsOnly(
+            entry(NormalizationFlag.PATH_NOT_IN_FORM, 3),
+            entry(NormalizationFlag.SECTION_HOLDS_VALUE, 1),
+            entry(NormalizationFlag.REPEATING_SECTION_HOLDS_NON_ROWS, 1),
+            entry(NormalizationFlag.VALUE_ISSUE, 2));
+        assertThat(normalized.flagged(NormalizationFlag.FORM_MISSING)).isZero();
+        assertThat(normalize("{'title': 'T'}").flags()).isEmpty();
     }
 
     @Test

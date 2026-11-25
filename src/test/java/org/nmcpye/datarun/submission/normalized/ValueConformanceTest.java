@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.submission.normalized;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.DoubleNode;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 
@@ -98,6 +99,16 @@ class ValueConformanceTest {
         assertThat(check(ValueType.SelectMulti, "[]")).isNull();
         assertThat(check(ValueType.SelectMulti, "'a'")).isEqualTo(ValueIssue.NOT_A_LIST_OF_CODES);
         assertThat(check(ValueType.SelectMulti, "['a', 1]")).isEqualTo(ValueIssue.NOT_A_LIST_OF_CODES);
+    }
+
+    @Test
+    void aFloatingNumberThatIsNotFiniteIsNoNumber() {
+        // never parsed from JSON, but a node built in code can hold one, and the check must not fail on it
+        assertThat(ValueConformance.check(ValueType.Number, DoubleNode.valueOf(Double.NaN)))
+            .isEqualTo(ValueIssue.NOT_A_NUMBER);
+        assertThat(ValueConformance.check(ValueType.IntegerPositive, DoubleNode.valueOf(Double.POSITIVE_INFINITY)))
+            .isEqualTo(ValueIssue.NOT_AN_INTEGER);
+        assertThat(ValueConformance.check(ValueType.Integer, DoubleNode.valueOf(3.0))).isNull();
     }
 
     @Test

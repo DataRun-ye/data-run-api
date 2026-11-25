@@ -26,6 +26,9 @@ import java.util.Set;
  * holds an object in submissions pinned to 13 and 15; those objects resolve through version 9 (1,104 submissions
  * on the staging clone).</p>
  *
+ * <p>A submission whose pinned version is not among the form's stored versions (a deleted version) resolves by the
+ * same order without step 2: through the form's other versions, newest first.</p>
+ *
  * <p>Immutable and safe to share between threads; built once per form and reused.</p>
  */
 public final class FormDefinition {
@@ -34,6 +37,10 @@ public final class FormDefinition {
     private final List<FormVersionDefinition> versions;
     private final Map<String, FormVersionDefinition> versionsByUid;
     private final Map<String, Map<String, Resolution[]>> resolutionsByVersionUid;
+    private final Map<String, Resolution[]> resolutionsWithoutPin;
+
+    /** The definition used when no definition of a form is stored: no versions, so no path resolves. */
+    static final FormDefinition NO_VERSIONS = new FormDefinition("", List.of());
 
     private FormDefinition(String id, List<FormVersionDefinition> versions) {
         this.id = Objects.requireNonNull(id, "id");
@@ -49,7 +56,13 @@ public final class FormDefinition {
             }
         }
         this.versionsByUid = Map.copyOf(byUid);
-        this.resolutionsByVersionUid = resolveAll(this.versions);
+        Map<String, List<Candidate>> candidates = candidatesByPath(this.versions);
+        Map<String, Map<String, Resolution[]>> byVersion = new HashMap<>();
+        for (FormVersionDefinition pinned : this.versions) {
+            byVersion.put(pinned.uid(), resolveAll(candidates, pinned));
+        }
+        this.resolutionsByVersionUid = Map.copyOf(byVersion);
+        this.resolutionsWithoutPin = resolveAll(candidates, null);
     }
 
     /**
@@ -80,16 +93,18 @@ public final class FormDefinition {
     /**
      * The definition that resolves a stored value at a data path, in a submission pinned to a version of this form.
      *
+     * @param pinned the pinned version, or {@code null} when it is not among the form's versions
      * @return {@code null} when no version of the form defines the path
      */
     Resolution resolve(FormVersionDefinition pinned, String path, StoredShape shape) {
-        Map<String, Resolution[]> resolutions = resolutionsByVersionUid.get(pinned.uid());
+        Map<String, Resolution[]> resolutions = pinned == null ? resolutionsWithoutPin
+            : resolutionsByVersionUid.getOrDefault(pinned.uid(), resolutionsWithoutPin);
         Resolution[] byShape = resolutions.get(path);
         return byShape == null ? null : byShape[shape.ordinal()];
     }
 
-    private static Map<String, Map<String, Resolution[]>> resolveAll(List<FormVersionDefinition> newestFirst) {
-        // every definition of each path, newest version first and, within a version, a field before a section
+    /** Every definition of each path, newest version first and, within a version, a field before a section. */
+    private static Map<String, List<Candidate>> candidatesByPath(List<FormVersionDefinition> newestFirst) {
         Map<String, List<Candidate>> candidatesByPath = new HashMap<>();
         for (FormVersionDefinition version : newestFirst) {
             for (FieldDefinition field : version.fields()) {
@@ -107,21 +122,22 @@ public final class FormDefinition {
             .comparingInt((Candidate c) -> c.version().number()).reversed()
             .thenComparing(c -> c.field() == null);
         candidatesByPath.values().forEach(list -> list.sort(order));
+        return candidatesByPath;
+    }
 
+    /** Each path's resolution for each shape, with this version pinned ({@code null}: none). */
+    private static Map<String, Resolution[]> resolveAll(Map<String, List<Candidate>> candidatesByPath,
+                                                        FormVersionDefinition pinned) {
         StoredShape[] shapes = StoredShape.values();
-        Map<String, Map<String, Resolution[]>> byVersion = new HashMap<>();
-        for (FormVersionDefinition pinned : newestFirst) {
-            Map<String, Resolution[]> byPath = new HashMap<>(candidatesByPath.size() * 2);
-            for (Map.Entry<String, List<Candidate>> entry : candidatesByPath.entrySet()) {
-                Resolution[] byShape = new Resolution[shapes.length];
-                for (StoredShape shape : shapes) {
-                    byShape[shape.ordinal()] = choose(entry.getValue(), pinned, shape);
-                }
-                byPath.put(entry.getKey(), byShape);
+        Map<String, Resolution[]> byPath = new HashMap<>(candidatesByPath.size() * 2);
+        for (Map.Entry<String, List<Candidate>> entry : candidatesByPath.entrySet()) {
+            Resolution[] byShape = new Resolution[shapes.length];
+            for (StoredShape shape : shapes) {
+                byShape[shape.ordinal()] = choose(entry.getValue(), pinned, shape);
             }
-            byVersion.put(pinned.uid(), Map.copyOf(byPath));
+            byPath.put(entry.getKey(), byShape);
         }
-        return Map.copyOf(byVersion);
+        return Map.copyOf(byPath);
     }
 
     private static Resolution choose(List<Candidate> newestFirst, FormVersionDefinition pinned, StoredShape shape) {

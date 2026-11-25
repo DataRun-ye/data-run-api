@@ -78,6 +78,16 @@ final class StoredForms {
             return this;
         }
 
+        /** A field whose data element no longer exists: its uid has no id. */
+        VersionBuilder fieldWithoutDataElement(String dataElementUid, String sectionPath, String name, String type) {
+            ObjectNode field = fields.addObject();
+            field.put("id", dataElementUid);
+            field.put("name", name);
+            field.put("path", sectionPath == null ? dataElementUid : sectionPath + "." + dataElementUid);
+            field.put("type", type);
+            return this;
+        }
+
         FormVersionDefinition build(String formId) {
             return FormVersionDefinition.parse(formId, id, uid, number, sections, fields, FIELD_IDS::get);
         }
