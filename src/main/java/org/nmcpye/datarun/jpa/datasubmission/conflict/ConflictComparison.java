@@ -35,12 +35,34 @@ public final class ConflictComparison {
     private ConflictComparison() {
     }
 
-    /** Whether two states are the same: document, deleted flag, assignment and status. */
+    /** Whether two states are the same: document, deleted flag, assignment (by id) and status. */
     public static boolean sameState(ComparedState a, ComparedState b) {
         return a.deleted() == b.deleted()
-            && Objects.equals(a.assignment(), b.assignment())
+            && Objects.equals(a.assignmentId(), b.assignmentId())
             && Objects.equals(a.status(), b.status())
             && sameDocument(a.document(), b.document());
+    }
+
+    /**
+     * Whether two upload items are the same phone copy, each as its phone sent it, in either route's shape: the
+     * document ({@code formData}), the deleted flag (absent or null is false), the assignment and the status, as sent.
+     * Two copies from phones are recognised by what the phones sent; the form version does not count, as for states.
+     */
+    public static boolean sameUploadItem(JsonNode a, JsonNode b) {
+        return sentDeleted(a) == sentDeleted(b)
+            && Objects.equals(sentText(a, "assignment"), sentText(b, "assignment"))
+            && Objects.equals(sentText(a, "status"), sentText(b, "status"))
+            && sameDocument(a.get("formData"), b.get("formData"));
+    }
+
+    private static boolean sentDeleted(JsonNode item) {
+        JsonNode deleted = item.path("deleted");
+        return deleted.isBoolean() && deleted.booleanValue();
+    }
+
+    private static String sentText(JsonNode item, String member) {
+        JsonNode value = item.get(member);
+        return value == null || value.isNull() ? null : value.asText();
     }
 
     /** Whether two documents are the same, rows' metadata left out. Null is a document holding JSON null. */

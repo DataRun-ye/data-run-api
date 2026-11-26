@@ -360,10 +360,7 @@ class NewCodeSeamsTest {
             "formUid"),
         breach(ROOT + ".submission.feed.publisher.FormDefinitions",
             "the feed keeps form definitions by form uid",
-            "forHead(formUid)", "forHead(pinnedVersionUid)"),
-        breach(ROOT + ".jpa.datasubmission.revision.SubmissionRevisionReader",
-            "conflict detection compares the journal's assignment and form version by uid",
-            "sql assignment_uid", "sql template_version_uid"));
+            "forHead(formUid)", "forHead(pinnedVersionUid)"));
 
     // =================================================================================================================
     // 3. The rules, built from their predicates so that the fixtures below can show each failing

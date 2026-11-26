@@ -29,12 +29,12 @@ public final class PlacementJdbcResolver {
     private final NamedParameterJdbcTemplate jdbc;
     private final Map<StoredPlacement, Placement> resolved = new HashMap<>();
 
-    PlacementJdbcResolver(NamedParameterJdbcTemplate jdbc) {
+    public PlacementJdbcResolver(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 
     /** The placement a revision's metadata names; a uid that names nothing, or none stored, leaves its id missing. */
-    Placement ofRevision(JsonNode metadata) {
+    public Placement ofRevision(JsonNode metadata) {
         StoredPlacement stored = new StoredPlacement(text(metadata, "assignment_uid"), text(metadata, "team_uid"),
             text(metadata, "org_unit_uid"), text(metadata, "activity_uid"));
         return resolved.computeIfAbsent(stored, this::resolve);

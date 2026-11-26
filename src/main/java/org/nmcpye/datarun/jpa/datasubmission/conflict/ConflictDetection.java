@@ -164,7 +164,7 @@ public class ConflictDetection {
             .map(text -> sameAsKept(copy, text) ? ConflictCheck.OpenCopy.SAME : ConflictCheck.OpenCopy.DIFFERENT)
             .orElse(ConflictCheck.OpenCopy.NONE);
         boolean equalsLastDecided = facts.lastDecidedCopy()
-            .map(text -> sameState(copy.asReceived(), ComparedState.ofUploadItem(ComparedState.parse(text))))
+            .map(text -> ConflictComparison.sameUploadItem(copy.uploadItem(), ComparedState.parse(text)))
             .orElse(false);
         boolean equalsBase = base != null && sameState(copy.canonical(), stateAt.apply(base));
         boolean equalsCurrent = sameState(copy.canonical(), context.stored().compared());
@@ -228,7 +228,7 @@ public class ConflictDetection {
     /** Whether the copy equals a kept one, as stored text; a kept copy that cannot be read is different. */
     private static boolean sameAsKept(PhoneCopy copy, String keptText) {
         try {
-            return sameState(copy.asReceived(), ComparedState.ofUploadItem(ComparedState.parse(keptText)));
+            return ConflictComparison.sameUploadItem(copy.uploadItem(), ComparedState.parse(keptText));
         } catch (RuntimeException unreadable) {
             return false;
         }

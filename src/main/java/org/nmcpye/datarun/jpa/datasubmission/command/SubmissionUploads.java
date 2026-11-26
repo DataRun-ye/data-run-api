@@ -44,6 +44,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
@@ -236,7 +237,7 @@ public class SubmissionUploads {
                     submission.getForm(),
                     submission.getFormVersion());
                 ConflictCheck conflict = detectConflict(UploadRoute.LEGACY, () -> objectMapper.valueToTree(submission),
-                    submission, stored, template, actor);
+                    submission, null, stored, template, actor);
                 if (conflict.answeredBeforeChecks()) {
                     return answeredUpdated(submission, summary);
                 }
@@ -280,8 +281,8 @@ public class SubmissionUploads {
             assignment,
             template.getTemplate());
         ConflictCheck conflict = mode != IntakeMode.LIVE ? ConflictCheck.OFF
-            : detectConflict(UploadRoute.VERSIONED, () -> objectMapper.valueToTree(request), submission, stored,
-            template, actor);
+            : detectConflict(UploadRoute.VERSIONED, () -> objectMapper.valueToTree(request), submission, assignment,
+            stored, template, actor);
         if (conflict.answeredBeforeChecks()) {
             return answeredUpdated(submission, summary);
         }
@@ -329,18 +330,26 @@ public class SubmissionUploads {
      * detection off. Detection reads only plain values, built here and only when it runs, from what the upload holds
      * under the submission lock: the copy as received, tagged before any row id is minted; the stored submission's
      * state, its document read exactly as the database prints it ({@link SubmissionLock#documentText}), with whether
-     * the uploader made it; and the uploader's user id.
+     * the uploader made it; and the uploader's user id. Detection keys by ids only: the uids by which the copy and the
+     * stored submission name their assignment, as installed phones send them, are turned into ids here.
+     *
+     * @param copyAssignment the assignment the upload resolved for the copy, or null when it has not yet (the legacy
+     *                       route resolves it in its checks)
      */
     private ConflictCheck detectConflict(UploadRoute route, Supplier<JsonNode> uploadItem, DataSubmission submission,
-                                         DataSubmission stored, TemplateVersionContext template,
-                                         SubmissionActor actor) {
+                                         Assignment copyAssignment, DataSubmission stored,
+                                         TemplateVersionContext template, SubmissionActor actor) {
         if (stored == null || !conflictDetection.isOn()) {
             return ConflictCheck.OFF;
         }
+        String copyAssignmentId = copyAssignment != null
+            ? copyAssignment.getId() : assignmentIdOf(submission.getAssignment());
+        String storedAssignmentId = Objects.equals(stored.getAssignment(), submission.getAssignment())
+            ? copyAssignmentId : assignmentIdOf(stored.getAssignment());
         PhoneCopy copy = new PhoneCopy(route, uploadItem.get(), new ComparedState(
             submission.getFormData(),
             Boolean.TRUE.equals(submission.getDeleted()),
-            submission.getAssignment(),
+            copyAssignmentId,
             submission.getStatus() == null ? null : submission.getStatus().name()),
             new MigrationRepeatIdGenerator(template).hasRowsWithoutIds(submission.getFormData()));
         StoredState state = new StoredState(
@@ -348,10 +357,16 @@ public class SubmissionUploads {
             stored.getLockVersion() == null ? 0 : stored.getLockVersion(),
             submissionLock.documentText(stored.getId()),
             Boolean.TRUE.equals(stored.getDeleted()),
-            stored.getAssignment(),
+            storedAssignmentId,
             stored.getStatus() == null ? null : stored.getStatus().name(),
             StoredSubmissionGuard.madeBy(stored, actor.access()));
         return conflictDetection.check(copy, state, actor.userId());
+    }
+
+    /** The id of the assignment a phone's uid names, or null when it names none. */
+    private String assignmentIdOf(String assignmentUid) {
+        return assignmentUid == null ? null
+            : assignmentRepository.findByUid(assignmentUid).map(Assignment::getId).orElse(null);
     }
 
     /**

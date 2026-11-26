@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictComparison.sameDocument;
 import static org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictComparison.sameState;
+import static org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictComparison.sameUploadItem;
 
 /** The conflict comparison (spec, Conflicts), on invented documents. */
 class ConflictComparisonTest {
@@ -93,11 +94,11 @@ class ConflictComparisonTest {
     /** An update never writes the form version, so an item that names another one, with the same data, is the same. */
     @Test
     void theFormVersionDoesNotCount() throws Exception {
-        assertThat(sameState(
-            ComparedState.ofUploadItem(REQUEST.readTree("""
-                {"formData": {"main": {"name": "a"}}, "assignment": "a1", "formVersion": "v1"}""")),
-            ComparedState.ofUploadItem(REQUEST.readTree("""
-                {"formData": {"main": {"name": "a"}}, "assignment": "a1", "formVersion": "v2"}""")))).isTrue();
+        assertThat(sameUploadItem(
+            REQUEST.readTree("""
+                {"formData": {"main": {"name": "a"}}, "assignment": "a1", "formVersion": "v1"}"""),
+            REQUEST.readTree("""
+                {"formData": {"main": {"name": "a"}}, "assignment": "a1", "formVersion": "v2"}"""))).isTrue();
     }
 
     /** API callers can send a status, and an upload writes it: a copy that changes only the status is changed. */
@@ -109,19 +110,24 @@ class ConflictComparisonTest {
         assertThat(sameState(none, new ComparedState(document, false, "assignment1", "DONE"))).isFalse();
         assertThat(sameState(new ComparedState(document, false, "assignment1", "DONE"),
             new ComparedState(document, false, "assignment1", "DONE"))).isTrue();
-        assertThat(ComparedState.ofUploadItem(REQUEST.readTree("{\"status\": \"DONE\"}")).status()).isEqualTo("DONE");
-        assertThat(ComparedState.ofUploadItem(REQUEST.readTree("{}")).status()).isNull();
+        assertThat(sameUploadItem(REQUEST.readTree("{\"status\": \"DONE\"}"), REQUEST.readTree("{}"))).isFalse();
     }
 
+    /** Two upload items, in either route's shape, are the same copy by what their phones sent. */
     @Test
-    void anUploadItemIsReadInEitherRoutesShape() throws Exception {
-        ComparedState item = ComparedState.ofUploadItem(REQUEST.readTree("""
-            {"uid": "s", "formData": {"main": {}}, "assignment": "a1", "formVersion": "v1"}"""));
+    void uploadItemsAreComparedAsTheirPhonesSentThem() throws Exception {
+        JsonNode item = REQUEST.readTree("""
+            {"uid": "s", "formData": {"main": {}}, "assignment": "a1", "formVersion": "v1"}""");
 
-        assertThat(item.deleted()).as("absent is false").isFalse();
-        assertThat(item.assignment()).isEqualTo("a1");
-        assertThat(ComparedState.ofUploadItem(REQUEST.readTree("{\"deleted\": null}")).deleted()).isFalse();
-        assertThat(ComparedState.ofUploadItem(REQUEST.readTree("{\"deleted\": true}")).deleted()).isTrue();
+        assertThat(sameUploadItem(item, REQUEST.readTree("""
+            {"uid": "s", "formData": {"main": {}}, "assignment": "a1", "deleted": null}"""))).as("absent or null is false")
+            .isTrue();
+        assertThat(sameUploadItem(item, REQUEST.readTree("""
+            {"formData": {"main": {}}, "assignment": "a1", "deleted": true}"""))).isFalse();
+        assertThat(sameUploadItem(item, REQUEST.readTree("""
+            {"formData": {"main": {}}, "assignment": "a2"}"""))).as("another assignment").isFalse();
+        assertThat(sameUploadItem(item, REQUEST.readTree("""
+            {"formData": {"main": {"name": "b"}}, "assignment": "a1"}"""))).isFalse();
     }
 
     @Test

@@ -548,7 +548,7 @@ public final class ConflictRehearsal implements AutoCloseable {
                            AccessRefusal refusal) {
         store.clearLast();
         try {
-            ConflictCheck check = detection.check(copy(head, state, document), storedState(head, holder),
+            ConflictCheck check = detection.check(copy(head, holder, state, document), storedState(head, holder),
                 holder.userId());
             if (check.answeredBeforeChecks()) {
                 return store.last() == null ? "changes nothing, before the checks"
@@ -578,25 +578,44 @@ public final class ConflictRehearsal implements AutoCloseable {
     }
 
     /** The copy as the upload builds it, tagged by the holder's form version before any id is minted. */
-    private PhoneCopy copy(Head head, SubmissionRevisionReader.State state, JsonNode document) {
+    private PhoneCopy copy(Head head, Holder holder, SubmissionRevisionReader.State state, JsonNode document) {
         boolean deleted = false;
+        Sent sent = sent(head.id(), holder.version());
         ObjectNode item = REQUEST.createObjectNode();
         item.put("uid", head.uid());
         item.put("form", head.form());
-        item.put("formVersion", state.formVersion());
-        item.put("assignment", state.assignment());
+        item.put("formVersion", sent.formVersion());
+        item.put("assignment", sent.assignment());
         item.put("deleted", deleted);
         item.put("status", state.status());
         item.set("formData", document);
         return new PhoneCopy(UploadRoute.LEGACY, item,
-            new ComparedState(document, deleted, state.assignment(), state.status()),
-            new MigrationRepeatIdGenerator(template(state.formVersion())).hasRowsWithoutIds(document));
+            new ComparedState(document, deleted, state.assignmentId(), state.status()),
+            new MigrationRepeatIdGenerator(template(sent.formVersion())).hasRowsWithoutIds(document));
     }
 
-    /** The stored state as the upload gives it, the creator told by the upload's own guard. */
-    private static StoredState storedState(Head head, Holder holder) {
-        return new StoredState(head.id(), head.version(), head.document(), head.deleted(), head.assignment(),
+    /**
+     * The stored state as the upload gives it: its assignment by id, as the upload turns the uid into one, and the
+     * creator told by the upload's own guard.
+     */
+    private StoredState storedState(Head head, Holder holder) {
+        String assignmentId = head.assignment() == null ? null : jdbc.queryForList(
+            "SELECT id FROM assignment WHERE uid = :assignment", Map.of("assignment", head.assignment()),
+            String.class).stream().findFirst().orElse(null);
+        return new StoredState(head.id(), head.version(), head.document(), head.deleted(), assignmentId,
             head.status(), StoredSubmissionGuard.madeBy(head.asStored(), user(holder.login())));
+    }
+
+    /** What the holder's phone sent with their revision, as phones name it: the assignment and the form version. */
+    private record Sent(String assignment, String formVersion) {
+    }
+
+    private Sent sent(String submissionId, long version) {
+        return jdbc.queryForObject("""
+                SELECT metadata ->> 'assignment_uid' AS assignment, metadata ->> 'template_version_uid' AS form_version
+                FROM journal.submission_revision WHERE submission_id = :id AND version = :version""",
+            new MapSqlParameterSource("id", submissionId).addValue("version", version),
+            (row, n) -> new Sent(row.getString("assignment"), row.getString("form_version")));
     }
 
     // ------------------------------------------------------------------------------------------ reading

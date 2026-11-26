@@ -9,16 +9,16 @@ package org.nmcpye.datarun.jpa.datasubmission.conflict;
  * @param documentText      its document as the database prints it ({@code form_data::text}), every number exact, or
  *                          null when it has none
  * @param deleted           whether it is deleted
- * @param assignment        its assignment's uid
+ * @param assignmentId      its assignment's id, or null when its stored assignment names none
  * @param status            its progress status, or null when it has none
  * @param uploaderIsCreator whether the uploader made it, as the upload's stored-record guard tells: a creator's base
  *                          version can be a baseline of the live submission
  */
-public record StoredState(String submissionId, long version, String documentText, boolean deleted, String assignment,
-                          String status, boolean uploaderIsCreator) {
+public record StoredState(String submissionId, long version, String documentText, boolean deleted,
+                          String assignmentId, String status, boolean uploaderIsCreator) {
 
     /** What the conflict comparison reads of it, its document parsed exactly. */
     ComparedState compared() {
-        return new ComparedState(ComparedState.parse(documentText), deleted, assignment, status);
+        return new ComparedState(ComparedState.parse(documentText), deleted, assignmentId, status);
     }
 }

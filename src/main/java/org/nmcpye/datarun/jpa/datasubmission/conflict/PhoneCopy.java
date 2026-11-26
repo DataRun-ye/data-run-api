@@ -11,13 +11,8 @@ import com.fasterxml.jackson.databind.JsonNode;
  *                    field the route knows, its decimals as the request's binary doubles; a field the route ignores,
  *                    such as a phone's sync bookkeeping, is not kept
  * @param canonical   what the comparison reads of it against a stored state: the document as received, its deleted
- *                    flag, the assignment the upload resolved, and its status
+ *                    flag, the id of the assignment the upload resolved, and its status
  * @param rowsLackIds any of its rows lacks an id, found by the upload before any id is minted (apps 5.2 and 5.3)
  */
 public record PhoneCopy(UploadRoute route, JsonNode uploadItem, ComparedState canonical, boolean rowsLackIds) {
-
-    /** What the comparison reads of it against another phone copy: the upload item's own parts. */
-    ComparedState asReceived() {
-        return ComparedState.ofUploadItem(uploadItem);
-    }
 }

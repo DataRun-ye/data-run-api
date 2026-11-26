@@ -1,6 +1,9 @@
 package org.nmcpye.datarun.jpa.datasubmission.revision;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
+import org.nmcpye.datarun.submission.normalized.StoredJson;
+import org.nmcpye.datarun.submission.normalized.jdbc.PlacementJdbcResolver;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -10,9 +13,10 @@ import java.util.Map;
 
 /**
  * Reads the journal for conflict detection: which revisions a submission has, and the state the comparison reads at
- * one of them. Stored documents come back as the database prints them
- * ({@code form_data::text}), so a reader can parse their numbers exactly. Called under the submission lock, in the
- * upload item's transaction, so the submission cannot change while it reads.
+ * one of them. It keys by ids only: the submission's, the users', and the assignment's, which the one placement
+ * resolver ({@link PlacementJdbcResolver}) finds for the placement a revision stores. Stored documents come back as the
+ * database prints them ({@code form_data::text}), so a reader can parse their numbers exactly. Called under the
+ * submission lock, in the upload item's transaction, so the submission cannot change while it reads.
  */
 @Repository
 @RequiredArgsConstructor
@@ -34,13 +38,12 @@ public class SubmissionRevisionReader {
     /**
      * What the conflict comparison reads of a submission's state.
      *
-     * @param document    {@code form_data} as text, or null when the state holds no document
-     * @param deleted     whether the submission is deleted
-     * @param assignment  the assignment's uid
-     * @param formVersion the pinned form version's uid
-     * @param status      the progress status, or null when there is none
+     * @param document     {@code form_data} as text, or null when the state holds no document
+     * @param deleted      whether the submission is deleted
+     * @param assignmentId the assignment's id, or null when the stored placement names none
+     * @param status       the progress status, or null when there is none
      */
-    public record State(String document, boolean deleted, String assignment, String formVersion, String status) {
+    public record State(String document, boolean deleted, String assignmentId, String status) {
     }
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -58,20 +61,25 @@ public class SubmissionRevisionReader {
                 row.getString("actor_user_id"), row.getString("on_behalf_of_user_id"), row.getBoolean("deleted")));
     }
 
-    /** The submission's state after the given revision. */
+    /** The submission's state after the given revision, its assignment by id. */
     public State stateAt(String submissionId, long version) {
+        PlacementJdbcResolver placements = new PlacementJdbcResolver(jdbc);
         return jdbc.queryForObject("""
                 SELECT form_data::text AS document, coalesce((metadata ->> 'deleted')::boolean, false) AS deleted,
-                       metadata ->> 'assignment_uid' AS assignment, metadata ->> 'template_version_uid' AS form_version,
-                       metadata ->> 'status' AS status
+                       metadata ->> 'status' AS status, metadata::text AS metadata
                 FROM journal.submission_revision
                 WHERE submission_id = :submissionId AND version = :version""",
             new MapSqlParameterSource().addValue("submissionId", submissionId).addValue("version", version),
-            (row, n) -> state(row));
+            (row, n) -> new State(row.getString("document"), row.getBoolean("deleted"),
+                placements.ofRevision(metadata(row.getString("metadata"))).assignmentId(), row.getString("status")));
     }
 
-    private static State state(java.sql.ResultSet row) throws java.sql.SQLException {
-        return new State(row.getString("document"), row.getBoolean("deleted"), row.getString("assignment"),
-            row.getString("form_version"), row.getString("status"));
+    private static com.fasterxml.jackson.databind.JsonNode metadata(String text) {
+        try {
+            return text == null ? null : StoredJson.parse(text);
+        } catch (JsonProcessingException e) {
+            // StoredJson's message names only the kind of failure, never the text
+            throw new IllegalStateException("A revision's metadata is not readable JSON: " + e.getOriginalMessage());
+        }
     }
 }
