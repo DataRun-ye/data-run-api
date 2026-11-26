@@ -77,6 +77,12 @@ class PendingRetriesIT {
         fixture = new FeedFixture(jdbc, transactionManager, url, username, password);
         fixture.ensureConfiguration();
         fixture.clean();
+        // a reconcile pass requested at this context's start runs out first, whichever class comes first, so a batch
+        // here does only this test's work
+        while (publisher.runBatch()) {
+            // the pass, and the retries of whatever it could not publish
+        }
+        fixture.clean();
     }
 
     @AfterEach
