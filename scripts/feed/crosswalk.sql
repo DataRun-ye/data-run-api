@@ -8,6 +8,12 @@
 -- same form, computed as the submission normalizer computes it: the field's section path (its stored path without the
 -- last key) and its name, or its name alone outside every section. Repeating sections' elements map to no field.
 --
+-- That data path rule restates the Java code's (FormVersionDefinition.parse) in SQL. The copy is accepted because this
+-- file is a one-time migration aid and a test pins the rule to the Java code (engineering, 2026-11-26):
+-- FeedComparisonIT maps through this file a form with a field on each branch of the rule, against the data paths that
+-- FormVersionDefinition.parse gives those fields, and holds comparison.sql's two copies of the rule to this file's
+-- text. Change the rule in Java, and that test fails until both files follow.
+--
 -- Self-contained: its own read-only, repeatable-read transaction, with the integrity check's limits, rolled back. Run
 -- it on the database host, detached (owner, 2026-11-26), as postgres, and fetch the file:
 --

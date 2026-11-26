@@ -2,6 +2,14 @@
 -- downstream reads today, so that feed versions of existing models can be checked against the server. Counts and ids
 -- only, never a value; dated by the run.
 --
+-- It restates two rules of the Java code in SQL: a field's data path (FormVersionDefinition.parse), as crosswalk.sql
+-- does, and the section id recipe (DerivedIds.sectionId), which needs pgcrypto's digest, installed by a changeset of
+-- the schema. The copies are accepted because this file is a migration aid, retired with tall and events, and a test
+-- pins both rules to the Java code (engineering, 2026-11-26): FeedComparisonIT holds this file's two copies of the
+-- data path rule to crosswalk.sql's text, which it maps against FormVersionDefinition.parse on every branch of the
+-- rule, and compares the section ids this file derives with DerivedIds.sectionId. Change either rule in Java, and that
+-- test fails until this file follows.
+--
 -- Self-contained: it opens its own read-only, repeatable-read transaction (one snapshot), with the integrity check's
 -- limits, and rolls back. Run it on the database host, detached (owner, 2026-11-26: anything that runs against the lab
 -- runs on a lab host), as postgres (temp_file_limit needs a superuser; the statements then run as pg_read_all_data):
@@ -24,8 +32,6 @@
 --   crosswalk|<what>|<count>
 --       canonical elements of a field mapping to no field, and to more than one (expected 0), and fields with no element
 -- The contract's fourth count, the first-time values of section 14, comes with build step F12.
---
--- The section id recipe needs pgcrypto's digest, which a changeset of the schema installs.
 \set ON_ERROR_STOP 1
 \set QUIET on
 \pset format unaligned
