@@ -120,7 +120,7 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
         this.writer = writer;
         this.pending = new PendingChanges(properties);
         this.republishMarks = new RepublishMarks(properties);
-        this.reconcile = new Reconcile(submissions);
+        this.reconcile = new Reconcile(submissions, properties.getReconcileScanBudget());
         this.backlog = backlog;
         this.afterBacklog = new TransactionTemplate(transactionManager);
         // a backstop: each submission's own statements stop at the feed part's limit
@@ -245,6 +245,12 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
         return age == null ? "none" : Math.round(age);
     }
 
+    /** Reconcile's scan budget: one batch reads pages for at most about this long while it finds nothing to publish. */
+    @Override
+    public Optional<Duration> scanBudget() {
+        return Optional.of(properties.getReconcileScanBudget());
+    }
+
     /** Requests a reconcile pass at start, which is also switch-on: the switch is read at start. */
     @EventListener(ApplicationReadyEvent.class)
     public void reconcileAtStart() {
@@ -262,8 +268,9 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
     }
 
     /**
-     * Publishes reconcile's next submissions, scanning further when none are queued, and records the pass in
-     * freshness once it ends. Whether a pass ran.
+     * Publishes reconcile's next submissions, scanning further when none are queued for at most the scan budget, and
+     * records the pass in freshness once it ends. Whether a pass runs: true also when this batch only read pages, so
+     * the runtime calls again, live changes first, and the pass goes on from where it stopped.
      */
     private boolean reconcileBatch() {
         synchronized (reconcile) {

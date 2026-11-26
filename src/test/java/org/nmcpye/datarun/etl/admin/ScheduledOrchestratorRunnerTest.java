@@ -13,9 +13,12 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import javax.sql.DataSource;
+import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -186,5 +189,27 @@ class ScheduledOrchestratorRunnerTest {
 
     private void lockFree() {
         when(lock.callExclusively(any())).thenAnswer(call -> Optional.of(call.<Supplier<?>>getArgument(0).get()));
+    }
+
+    @Test
+    void aScanBudgetNotShorterThanAPollStopsTheStartWithAClearMessage() {
+        Duration poll = properties.getMaxPollDuration();
+        DeferredWork scanning = mock(DeferredWork.class);
+        when(scanning.isOn()).thenReturn(true);
+        when(scanning.scanBudget()).thenReturn(Optional.of(poll));
+
+        assertThatThrownBy(() -> ScheduledOrchestratorRunner.requireScanBudgetsBelowThePoll(List.of(scanning), poll))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining(poll.toString())
+            .hasMessageContaining("datarun.etl.max-poll-duration");
+
+        when(scanning.scanBudget()).thenReturn(Optional.of(Duration.ofSeconds(1)));
+        assertThatCode(() -> ScheduledOrchestratorRunner.requireScanBudgetsBelowThePoll(List.of(scanning), poll))
+            .as("a budget shorter than a poll").doesNotThrowAnyException();
+
+        when(scanning.isOn()).thenReturn(false);
+        when(scanning.scanBudget()).thenReturn(Optional.of(poll.multipliedBy(2)));
+        assertThatCode(() -> ScheduledOrchestratorRunner.requireScanBudgetsBelowThePoll(List.of(scanning), poll))
+            .as("work that is off").doesNotThrowAnyException();
     }
 }

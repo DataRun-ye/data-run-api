@@ -4,6 +4,7 @@ import org.nmcpye.datarun.submission.normalized.jdbc.StoredSubmissionJdbcReader;
 import org.nmcpye.datarun.submission.normalized.jdbc.StoredSubmissionJdbcReader.HeadVersion;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -23,6 +24,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>The submissions and their heads' versions come from the stored-submission read seam
  * ({@link StoredSubmissionJdbcReader#headVersionsAfter}); the versions the feed holds and the pending changes, from the
  * feed's own tables.</p>
+ *
+ * <p>The pass reads a page at a time, and each call reads for a bounded time: at least one page, then more only while
+ * nothing is queued and its scan budget lasts, so a stretch where every head is held never keeps one call reading the
+ * whole table. The next call goes on from where the last one stopped.</p>
  *
  * <p>A pass is requested at start (the switch is read at start, so this is also switch-on) and nightly; a request
  * during a pass starts another after it. A submission with a pending change that is not dead is counted but left to
@@ -59,6 +64,7 @@ final class Reconcile {
     }
 
     private final StoredSubmissionJdbcReader reader;
+    private final Duration scanBudget;
     private final AtomicBoolean requested = new AtomicBoolean();
 
     private boolean running;
@@ -71,8 +77,12 @@ final class Reconcile {
     private long failed;
     private long waiting;
 
-    Reconcile(StoredSubmissionJdbcReader reader) {
+    /**
+     * @param scanBudget how long one call may go on reading pages while nothing is queued, after its first page
+     */
+    Reconcile(StoredSubmissionJdbcReader reader, Duration scanBudget) {
         this.reader = reader;
+        this.scanBudget = scanBudget;
     }
 
     /** Requests a pass: the next batch behind the live backlog starts one, or the next after the current pass. */
@@ -97,12 +107,18 @@ final class Reconcile {
     }
 
     /**
-     * The next submissions to publish, at most {@code limit}, scanning further while none are queued; empty once the
-     * pass has scanned every submission and published its queue. The scan reads in the caller's transaction.
+     * The next submissions to publish, at most {@code limit}. While none are queued it reads on, a page of
+     * {@code scanSize} at a time: at least one page, then more while nothing is queued, until the scan budget is spent
+     * or every submission was read. Empty when the budget ran out first, and the next call goes on from the same place;
+     * empty also once the pass has read every submission and published its queue. The reads run in the caller's
+     * transaction.
      */
     List<String> next(NamedParameterJdbcTemplate jdbc, int scanSize, int limit) {
-        while (queue.isEmpty() && !scannedAll) {
-            scan(jdbc, scanSize);
+        if (queue.isEmpty() && !scannedAll) {
+            long stopAt = System.nanoTime() + scanBudget.toNanos();
+            do {
+                scan(jdbc, scanSize);
+            } while (queue.isEmpty() && !scannedAll && System.nanoTime() - stopAt < 0);
         }
         return queue.stream().limit(limit).toList();
     }

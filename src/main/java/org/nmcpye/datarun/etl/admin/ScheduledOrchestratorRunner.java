@@ -32,8 +32,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * While an output keeps deferred work ({@link DeferredWork}, such as the submission feed's retries and reconcile),
  * every poll takes the run lock, and once no outbox row is due it runs that work one batch at a time, with the live
- * backlog first again after each, for as long as the poll may run. A poll that succeeds pings the heartbeat monitor
- * only while every such work is within its freshness target ({@link DeferredWork#withinFreshnessTarget}).
+ * backlog first again after each, for as long as the poll may run. A batch that scans for work stops within its scan
+ * budget ({@link DeferredWork#scanBudget}), which must be shorter than a poll. A poll that succeeds pings the heartbeat
+ * monitor only while every such work is within its freshness target ({@link DeferredWork#withinFreshnessTarget}).
  */
 @Service
 public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
@@ -72,6 +73,24 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
         this.heartbeat = heartbeat;
         this.deferredWork = List.copyOf(deferredWork);
         this.pause.set(properties.getPollDelay());
+        requireScanBudgetsBelowThePoll(this.deferredWork, properties.getMaxPollDuration());
+    }
+
+    /** Every deferred work that is on and scans must stop scanning within a poll; otherwise nothing starts. */
+    static void requireScanBudgetsBelowThePoll(List<DeferredWork> work, Duration maxPollDuration) {
+        for (DeferredWork each : work) {
+            if (!each.isOn()) {
+                continue;
+            }
+            each.scanBudget().ifPresent(budget -> {
+                if (budget.isNegative() || budget.compareTo(maxPollDuration) >= 0) {
+                    throw new IllegalStateException("The deferred work " + each.getClass().getSimpleName()
+                        + " may scan for " + budget + " per batch; that must be less than a poll, "
+                        + "datarun.etl.max-poll-duration (" + maxPollDuration + "). Lower its scan budget or "
+                        + "lengthen the poll.");
+                }
+            });
+        }
     }
 
     @Override

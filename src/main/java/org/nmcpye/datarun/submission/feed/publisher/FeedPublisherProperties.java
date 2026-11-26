@@ -39,6 +39,14 @@ public class FeedPublisherProperties {
     private int reconcileScanSize = 2000;
 
     /**
+     * How long one reconcile batch may go on reading while it finds nothing to publish: it reads at least one page of
+     * {@code reconcile-scan-size}, then stops once this time is spent, and the next batch goes on from there. The
+     * runtime that runs the batches refuses to start unless it is shorter than its poll
+     * ({@code datarun.etl.max-poll-duration}), so one batch never takes a whole poll.
+     */
+    private Duration reconcileScanBudget = Duration.ofSeconds(1);
+
+    /**
      * The freshness target: the heartbeat is sent only while the oldest unpublished outbox change and the oldest
      * pending change are younger than this, and nothing is dead (contract 12). Integrity check 12 counts pending
      * changes older than the contract's two minutes.

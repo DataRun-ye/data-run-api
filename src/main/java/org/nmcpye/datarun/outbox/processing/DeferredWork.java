@@ -1,5 +1,8 @@
 package org.nmcpye.datarun.outbox.processing;
 
+import java.time.Duration;
+import java.util.Optional;
+
 /**
  * Work an output keeps for when no outbox change is due, such as the submission feed's retries, republication and
  * reconcile. The runtime that claims outbox rows runs it one batch at a time, claiming the live changes first again
@@ -16,6 +19,15 @@ public interface DeferredWork {
      * @return whether it did anything; false when nothing waits
      */
     boolean runBatch();
+
+    /**
+     * How long one batch may go on looking for work before it returns, for work that scans for it (reconcile reads
+     * pages). The runtime refuses to start unless it is shorter than a poll, so a long stretch with nothing to do still
+     * returns within the poll, and the live changes are claimed first again. Work that does not scan keeps none.
+     */
+    default Optional<Duration> scanBudget() {
+        return Optional.empty();
+    }
 
     /**
      * Updates the freshness the work reports, and says whether it is within its target. The runtime sends its
