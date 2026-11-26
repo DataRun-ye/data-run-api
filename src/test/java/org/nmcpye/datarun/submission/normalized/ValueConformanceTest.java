@@ -7,7 +7,7 @@ import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.nmcpye.datarun.submission.normalized.StoredForms.FORM_UID;
+import static org.nmcpye.datarun.submission.normalized.StoredForms.FORM_ID;
 import static org.nmcpye.datarun.submission.normalized.StoredForms.json;
 import static org.nmcpye.datarun.submission.normalized.StoredForms.version;
 
@@ -103,11 +103,11 @@ class ValueConformanceTest {
 
     @Test
     void aStoredNaNNeverReachesTheCheck_theDocumentDoesNotParse() {
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .field("deUidAmount1", null, "amount", "Number").build("01HZY8X3K2ABCDEFGHJKMNPQRS");
 
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission("01J2Q7Y0V6M3N4P5R6S7T8V9WX", FORM_UID, "fvUid000001", "{\"amount\": NaN}"),
+            new StoredSubmission("01J2Q7Y0V6M3N4P5R6S7T8V9WX", FORM_ID, "01JV0000000000000000000001", "{\"amount\": NaN}"),
             FormDefinition.of("01HZY8X3K2ABCDEFGHJKMNPQRS", List.of(v1)));
 
         assertThat(normalized.values()).isEmpty();
@@ -131,12 +131,12 @@ class ValueConformanceTest {
     @Test
     void theNormalizerKeepsAValueThatDoesNotParseWholeAndFlagsIt() {
         String form = "01HZY8X3K2ABCDEFGHJKMNPQRS";
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .field("deUidCount01", null, "count", "IntegerPositive")
             .field("deUidDay0001", null, "day", "Date")
             .build(form);
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission("01J2Q7Y0V6M3N4P5R6S7T8V9WX", FORM_UID, "fvUid000001",
+            new StoredSubmission("01J2Q7Y0V6M3N4P5R6S7T8V9WX", FORM_ID, "01JV0000000000000000000001",
                 StoredForms.text("{'count': '7 people', 'day': '2026-12-03'}")),
             FormDefinition.of(form, List.of(v1)));
 

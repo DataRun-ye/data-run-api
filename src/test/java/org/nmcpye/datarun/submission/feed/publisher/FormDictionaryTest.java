@@ -41,7 +41,7 @@ class FormDictionaryTest {
 
     private static FormVersionDefinition version(String formId, String id, int number, String sections,
                                                  String fields) {
-        return FormVersionDefinition.parse(formId, id, "fvUid" + id.substring(id.length() - 6), number,
+        return FormVersionDefinition.parse(formId, id, number,
             json(sections), json(fields), DATA_ELEMENTS::get, OPTION_SETS::get);
     }
 

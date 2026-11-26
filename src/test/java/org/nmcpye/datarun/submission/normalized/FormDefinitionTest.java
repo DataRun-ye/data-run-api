@@ -20,7 +20,7 @@ class FormDefinitionTest {
 
     @Test
     void aFieldIsLocatedByItsSectionPathAndItsNameNotByItsDataElementUid() {
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .section("visit", false)
             .section("visit.households", true)
             .field("deUidHHsize", "visit.households", "household_size", "IntegerZeroOrPositive")
@@ -41,7 +41,7 @@ class FormDefinitionTest {
 
     @Test
     void aFieldWhoseDataElementIsGoneIsKeptWithoutAnId() {
-        FormVersionDefinition v = FormVersionDefinition.parse(FORM, "01JV0000000000000000000001", "fvUid000001", 1,
+        FormVersionDefinition v = FormVersionDefinition.parse(FORM, "01JV0000000000000000000001", 1,
             StoredForms.json("[]"),
             StoredForms.json("[{'id': 'deUidNoId00', 'name': 'x', 'path': 'deUidNoId00', 'type': 'Text'}]"),
             uid -> null, uid -> null);
@@ -52,7 +52,7 @@ class FormDefinitionTest {
 
     @Test
     void malformedStoredDefinitionsAreReadAsFarAsTheyGo() {
-        FormVersionDefinition v = FormVersionDefinition.parse(FORM, "01JV0000000000000000000001", "fvUid000001", 1,
+        FormVersionDefinition v = FormVersionDefinition.parse(FORM, "01JV0000000000000000000001", 1,
             StoredForms.json("{'not': 'an array'}"),
             StoredForms.json("[3, {'name': 'no id'}, {'id': 'deUidNoName'}, null]"),
             uid -> "01JD0000000000000000000001", uid -> "01JO0000000000000000000001");
@@ -64,7 +64,7 @@ class FormDefinitionTest {
     /** What the feed's dictionary publishes of each definition is read as stored; a value of another type is none. */
     @Test
     void theDictionaryAttributesAreReadAsStored() {
-        FormVersionDefinition v = FormVersionDefinition.parse(FORM, "01JV0000000000000000000001", "fvUid000001", 1,
+        FormVersionDefinition v = FormVersionDefinition.parse(FORM, "01JV0000000000000000000001", 1,
             StoredForms.json("""
                 [{'name': 'visit', 'path': 'visit', 'order': 1, 'label': {'en': 'Visit', 'ar': 'Ziyara'}},
                  {'name': 'households', 'path': 'visit.households', 'repeatable': true, 'order': 2},
@@ -94,9 +94,9 @@ class FormDefinitionTest {
 
     @Test
     void withoutAPinnedVersionAPathResolvesThroughTheNewestVersionThatCanHoldIt() {
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .section("stock", false).field("deUidCount1", null, "count", "Text").build(FORM);
-        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", 2)
             .section("stock", true).field("deUidCount1", null, "count", "Integer").build(FORM);
         FormDefinition form = FormDefinition.of(FORM, List.of(v1, v2));
 
@@ -111,7 +111,7 @@ class FormDefinitionTest {
 
     @Test
     void anUnknownValueTypeIsNoValueType() {
-        FormVersionDefinition v = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v = version("01JV0000000000000000000001", 1)
             .field("deUidOdd000", null, "odd", "NotAType")
             .build(FORM);
 
@@ -120,9 +120,9 @@ class FormDefinitionTest {
 
     @Test
     void thePinnedVersionsDefinitionComesFirst() {
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .field("deUidCount1", null, "count", "Text").build(FORM);
-        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", 2)
             .field("deUidCount1", null, "count", "Integer").build(FORM);
         FormDefinition form = FormDefinition.of(FORM, List.of(v2, v1));
 
@@ -135,11 +135,11 @@ class FormDefinitionTest {
 
     @Test
     void aPathThePinnedVersionDoesNotDefineResolvesThroughTheNewestVersionThatDoes() {
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .field("deUidOld001", null, "old_question", "Text").build(FORM);
-        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", 2)
             .field("deUidOld002", null, "old_question", "Text").build(FORM);
-        FormVersionDefinition v3 = version("01JV0000000000000000000003", "fvUid000003", 3)
+        FormVersionDefinition v3 = version("01JV0000000000000000000003", 3)
             .field("deUidNew001", null, "new_question", "Text").build(FORM);
         FormDefinition form = FormDefinition.of(FORM, List.of(v1, v3, v2));
 
@@ -155,9 +155,9 @@ class FormDefinitionTest {
     void aDefinitionThatCanHoldTheShapeComesBeforeThePinnedVersions() {
         // plain in version 1, repeating in version 2: an object in a submission pinned to version 2 resolves through
         // version 1, and rows through version 2
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .section("stock", false).build(FORM);
-        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", 2)
             .section("stock", true).build(FORM);
         FormDefinition form = FormDefinition.of(FORM, List.of(v1, v2));
 
@@ -176,7 +176,7 @@ class FormDefinitionTest {
 
     @Test
     void aFieldHoldsAnyShape() {
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .field("deUidMulti1", null, "choices", "SelectMulti").build(FORM);
         FormDefinition form = FormDefinition.of(FORM, List.of(v1));
 
@@ -187,21 +187,21 @@ class FormDefinitionTest {
 
     @Test
     void aStoredSubmissionNamesItsVersionByUid() {
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1).build(FORM);
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1).build(FORM);
         FormDefinition form = FormDefinition.of(FORM, List.of(v1));
 
-        assertThat(form.versionByUid("fvUid000001")).containsSame(v1);
-        assertThat(form.versionByUid("fvUidOther0")).isEmpty();
-        assertThat(form.versionByUid(null)).isEmpty();
+        assertThat(form.versionById("01JV0000000000000000000001")).containsSame(v1);
+        assertThat(form.versionById("01JVOTHER00000000000000000")).isEmpty();
+        assertThat(form.versionById(null)).isEmpty();
         assertThatThrownBy(() -> FormDefinition.of(FORM, List.of(v1,
-            version("01JV0000000000000000000002", "fvUid000002", 1).build(FORM))))
+            version("01JV0000000000000000000002", 1).build(FORM))))
             .isInstanceOf(IllegalArgumentException.class);
         assertThat(form.id()).isEqualTo(FORM);
     }
 
     @Test
     void pathsThatNameDifferentThingsAcrossVersionsOrTwiceInOneAreAmbiguous() {
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .field("deUidReuse01", null, "reused", "Text")
             .section("flip", false)
             .section("stock", false)
@@ -209,7 +209,7 @@ class FormDefinitionTest {
             .field("deUidTwiceA1", null, "twice", "Text")
             .field("deUidTwiceB1", null, "twice", "Integer")
             .build(FORM);
-        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", 2)
             .field("deUidReuse02", null, "reused", "Text")
             .field("deUidFlip001", null, "flip", "Text")
             .section("stock", true)
@@ -237,18 +237,18 @@ class FormDefinitionTest {
     /** The reverse of resolution: where every version stores a field's values, for search and edits by field id. */
     @Test
     void aFieldsDataPathsAreListedByVersionNewestFirst() {
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .section("visit", false)
             .field("deUidMoved0", "visit", "moved", "Integer")
             .build(FORM);
-        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", 2)
             .section("visit", false)
             .section("visit.households", true)
             .field("deUidMoved0", "visit.households", "moved_again", "Integer")
             .field("deUidMoved0", null, "moved", "Integer")
             .fieldWithoutDataElement("deUidGone00", null, "gone", "Text")
             .build(FORM);
-        FormVersionDefinition v3 = version("01JV0000000000000000000003", "fvUid000003", 3)
+        FormVersionDefinition v3 = version("01JV0000000000000000000003", 3)
             .field("deUidOther0", null, "other", "Text")
             .build(FORM);
         FormDefinition form = FormDefinition.of(FORM, List.of(v1, v3, v2));
@@ -271,7 +271,7 @@ class FormDefinitionTest {
      */
     @Test
     void theFieldPlacementsThatHoldValuesAreTheOnesTheNormalizerKeeps() {
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .section("visit", false)
             .field("deUidTwice0", "visit", "zeta", "Integer")
             .field("deUidTwice0", "visit", "alpha", "Integer")
@@ -293,7 +293,7 @@ class FormDefinitionTest {
             .containsExactly(fieldId("deUidSecond"));
 
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(new StoredSubmission(
-            "01J2Q7Y0V6M3N4P5R6S7T8V9WX", StoredForms.FORM_UID, "fvUid000001",
+            "01J2Q7Y0V6M3N4P5R6S7T8V9WX", StoredForms.FORM_ID, "01JV0000000000000000000001",
             StoredForms.text("{'visit': {'zeta': 1, 'alpha': 2, 'shared': 's'}}")), form);
         assertThat(normalized.values()).extracting(FieldValue::path, FieldValue::fieldId).containsExactly(
             org.assertj.core.groups.Tuple.tuple("visit.alpha", fieldId("deUidTwice0")),
@@ -312,8 +312,8 @@ class FormDefinitionTest {
 
     @Test
     void placementsAreAskedOfTheFormsOwnVersions() {
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1).build(FORM);
-        FormVersionDefinition other = version("01JV0000000000000000000009", "fvUid000009", 9).build(FORM);
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1).build(FORM);
+        FormVersionDefinition other = version("01JV0000000000000000000009", 9).build(FORM);
 
         assertThatThrownBy(() -> FormDefinition.of(FORM, List.of(v1)).placements(other))
             .isInstanceOf(IllegalArgumentException.class);

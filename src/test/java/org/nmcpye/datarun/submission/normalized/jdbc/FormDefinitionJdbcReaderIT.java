@@ -103,7 +103,7 @@ class FormDefinitionJdbcReaderIT {
 
     @Test
     void everyVersionIsReadWithDataPathsAndDataElementIds() {
-        FormDefinition form = reader.read(FORM_UID).orElseThrow().definition();
+        FormDefinition form = reader.read(FORM_ID).orElseThrow().definition();
 
         assertThat(form.id()).isEqualTo(FORM_ID);
         assertThat(form.versions()).extracting(FormVersionDefinition::number).containsExactly(2, 1);
@@ -124,7 +124,7 @@ class FormDefinitionJdbcReaderIT {
     /** What the feed's dictionary publishes is read in the same statement: option set ids, labels, mandatory, order. */
     @Test
     void theDictionaryAttributesAreReadWithTheDefinitions() {
-        FormVersionDefinition v2 = reader.read(FORM_UID).orElseThrow().definition().versions().get(0);
+        FormVersionDefinition v2 = reader.read(FORM_ID).orElseThrow().definition().versions().get(0);
 
         assertThat(v2.fields())
             .extracting(FieldDefinition::name, FieldDefinition::optionSetId, FieldDefinition::label,
@@ -142,13 +142,13 @@ class FormDefinitionJdbcReaderIT {
     @Test
     void aStoredSubmissionNormalizesAgainstTheDefinitionReadByItsFormUid() throws Exception {
         StoredSubmission stored = new StoredSubmission(
-            "01JS1SB0000000000000000001", FORM_UID, "nzFormVer02", json.writeValueAsString(Map.of(
+            "01JS1SB0000000000000000001", FORM_ID, "01JS1FV0000000000000000002", json.writeValueAsString(Map.of(
                 "nz_title", "T",
                 "main", Map.of(
                     "nz_note", "kept through version 1",
                     "rows", List.of(Map.of("_id", "01JS1RW0000000000000000001", "nz_count", 3,
                         "parts", List.of(Map.of("nz_part", "p"))))))));
-        FormDefinition form = reader.read(stored.formUid()).orElseThrow().definition();
+        FormDefinition form = reader.read(stored.formId()).orElseThrow().definition();
 
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(stored, form);
 
@@ -183,10 +183,10 @@ class FormDefinitionJdbcReaderIT {
 
     @Test
     void severalFormsAreReadTogetherAndUnknownOnesAreAbsent() {
-        assertThat(reader.read(Set.of(FORM_UID, "nzNoSuchFrm"))).containsOnlyKeys(FORM_UID);
-        assertThat(reader.read("nzNoSuchFrm")).isEmpty();
+        assertThat(reader.read(Set.of(FORM_ID, "01JS1FM000000000000000NONE"))).containsOnlyKeys(FORM_ID);
+        assertThat(reader.read("01JS1FM000000000000000NONE")).isEmpty();
         assertThat(reader.read(Set.of())).isEmpty();
-        assertThat(reader.changeTokens(Set.of("nzNoSuchFrm"))).isEmpty();
+        assertThat(reader.changeTokens(Set.of("01JS1FM000000000000000NONE"))).isEmpty();
     }
 
     /** Every form at once, as the feed's dictionary reads them: the same definitions and tokens as one by one. */
@@ -195,11 +195,11 @@ class FormDefinitionJdbcReaderIT {
         Map<String, FormDefinitionJdbcReader.Snapshot> all = reader.readAll();
         Map<String, String> tokens = reader.allChangeTokens();
 
-        FormDefinitionJdbcReader.Snapshot one = reader.read(FORM_UID).orElseThrow();
-        assertThat(all).containsKey(FORM_UID);
-        assertThat(all.get(FORM_UID).changeToken()).isEqualTo(one.changeToken());
-        assertThat(all.get(FORM_UID).definition().versions()).isEqualTo(one.definition().versions());
-        assertThat(tokens).containsEntry(FORM_UID, one.changeToken());
+        FormDefinitionJdbcReader.Snapshot one = reader.read(FORM_ID).orElseThrow();
+        assertThat(all).containsKey(FORM_ID);
+        assertThat(all.get(FORM_ID).changeToken()).isEqualTo(one.changeToken());
+        assertThat(all.get(FORM_ID).definition().versions()).isEqualTo(one.definition().versions());
+        assertThat(tokens).containsEntry(FORM_ID, one.changeToken());
         assertThat(tokens.keySet()).as("a token for every form read, and only those").isEqualTo(all.keySet());
     }
 
@@ -209,14 +209,14 @@ class FormDefinitionJdbcReaderIT {
         TransactionTemplate readOnly = new TransactionTemplate(transactionManager);
         readOnly.setReadOnly(true);
 
-        String token = readOnly.execute(status -> reader.read(FORM_UID).orElseThrow().changeToken());
-        Map<String, String> tokens = readOnly.execute(status -> reader.changeTokens(Set.of(FORM_UID)));
+        String token = readOnly.execute(status -> reader.read(FORM_ID).orElseThrow().changeToken());
+        Map<String, String> tokens = readOnly.execute(status -> reader.changeTokens(Set.of(FORM_ID)));
         assertThat(token).isNotBlank();
-        assertThat(tokens).containsOnlyKeys(FORM_UID);
+        assertThat(tokens).containsOnlyKeys(FORM_ID);
         Map<String, FormDefinitionJdbcReader.Snapshot> all = readOnly.execute(status -> reader.readAll());
         Map<String, String> allTokens = readOnly.execute(status -> reader.allChangeTokens());
-        assertThat(all).containsKey(FORM_UID);
-        assertThat(allTokens).containsKey(FORM_UID);
+        assertThat(all).containsKey(FORM_ID);
+        assertThat(allTokens).containsKey(FORM_ID);
         assertThatThrownBy(() -> readOnly.executeWithoutResult(status -> jdbc.update(
             "UPDATE data_element SET name = name WHERE uid = :uid", Map.of("uid", "nzDeTitle01"))))
             .as("the transaction really is read-only").isInstanceOf(DataAccessException.class);
@@ -224,8 +224,8 @@ class FormDefinitionJdbcReaderIT {
 
     @Test
     void theChangeTokenMovesWhenAVersionOrADataElementChanges() {
-        String token = reader.read(FORM_UID).orElseThrow().changeToken();
-        assertThat(reader.changeTokens(Set.of(FORM_UID))).containsEntry(FORM_UID, token);
+        String token = reader.read(FORM_ID).orElseThrow().changeToken();
+        assertThat(reader.changeTokens(Set.of(FORM_ID))).containsEntry(FORM_ID, token);
 
         inTransaction(() -> version("01JS1FV0000000000000000003", "nzFormVer03", 3, "[]",
             "[{\"id\": \"nzDeTitle01\", \"name\": \"nz_title\", \"path\": \"nzDeTitle01\", \"type\": \"Text\"}]"));
@@ -264,7 +264,7 @@ class FormDefinitionJdbcReaderIT {
         assertThat(deleted).as("back to the same versions and elements").isEqualTo(token);
         assertThat(elementDeletedAgain).as("back to the same elements").isEqualTo(elementChanged);
         assertThat(optionSetDeletedAgain).as("back to the same option sets").isEqualTo(optionSetChanged);
-        assertThat(reader.read(FORM_UID).orElseThrow().changeToken()).isEqualTo(optionSetChanged);
+        assertThat(reader.read(FORM_ID).orElseThrow().changeToken()).isEqualTo(optionSetChanged);
     }
 
     @Test
@@ -278,13 +278,13 @@ class FormDefinitionJdbcReaderIT {
                 Map.of("id", formId, "uid", formUid));
             version(formUid, formId, "01JS1FG0000000000000000002", "nzGoneVer01", 1, "[]", "[]");
         });
-        assertThat(reader.changeTokens(Set.of(formUid))).containsOnlyKeys(formUid);
+        assertThat(reader.changeTokens(Set.of(formId))).containsOnlyKeys(formId);
 
         inTransaction(() -> jdbc.update("DELETE FROM data_template_version WHERE data_template_id = :id",
             Map.of("id", formId)));
         try {
-            assertThat(reader.changeTokens(Set.of(formUid))).as("no token: a change").isEmpty();
-            assertThat(reader.read(formUid)).isEmpty();
+            assertThat(reader.changeTokens(Set.of(formId))).as("no token: a change").isEmpty();
+            assertThat(reader.read(formId)).isEmpty();
         } finally {
             inTransaction(() -> jdbc.update("DELETE FROM data_template WHERE id = :id", Map.of("id", formId)));
         }
@@ -307,13 +307,13 @@ class FormDefinitionJdbcReaderIT {
                     + "\"path\": \"nzDeTitle01\", \"optionSet\": 7}]");
         });
         try {
-            FormDefinition form = reader.read(formUid).orElseThrow().definition();
+            FormDefinition form = reader.read(formId).orElseThrow().definition();
             assertThat(form.versions()).extracting(FormVersionDefinition::number).containsExactly(2, 1);
             assertThat(form.versions().get(1).fields()).isEmpty();
             assertThat(form.versions().get(1).sections()).isEmpty();
             assertThat(form.versions().get(0).fields()).extracting(FieldDefinition::id, FieldDefinition::optionSetId)
                 .containsExactly(tuple(DATA_ELEMENTS.get("nzDeTitle01"), null));
-            assertThat(reader.changeTokens(Set.of(formUid))).containsOnlyKeys(formUid);
+            assertThat(reader.changeTokens(Set.of(formId))).containsOnlyKeys(formId);
         } finally {
             inTransaction(() -> {
                 jdbc.update("DELETE FROM data_template_version WHERE data_template_id = :id", Map.of("id", formId));
@@ -323,7 +323,7 @@ class FormDefinitionJdbcReaderIT {
     }
 
     private String currentToken() {
-        return reader.changeTokens(Set.of(FORM_UID)).get(FORM_UID);
+        return reader.changeTokens(Set.of(FORM_ID)).get(FORM_ID);
     }
 
     private void inTransaction(Runnable work) {

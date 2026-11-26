@@ -339,28 +339,14 @@ class NewCodeSeamsTest {
         edge(NORMALIZED + "FormVersionDefinition",
             "turn the data element and option set uids a template's fields name into ids",
             "parse(fieldIdForUid)", "parse(optionSetIdForUid)"),
-        // Breaches: new code that keys by uid today.
-        breach(NORMALIZED + "StoredSubmission",
-            "the stored form and pinned version reach the normalizer as uids, though the reader can resolve their ids",
-            "formUid", "formVersionUid"),
-        breach(NORMALIZED + "FormVersionDefinition",
-            "a version is known by its uid, to match the stored pin",
-            "uid", "parse(uid)"),
-        breach(NORMALIZED + "FormDefinition",
-            "versions are looked up by uid",
-            "versionsByUid", "resolutionsByVersionUid", "versionByUid(uid)"),
-        breach(NORMALIZED + "jdbc.FormDefinitionJdbcReader",
-            "definitions and change tokens are keyed by form uid, and versions by uid",
-            "read(formUid)", "read(formUids)", "changeTokens(formUids)", "sql form_uid", "sql version_uid"),
-        breach(NORMALIZED + "jdbc.StoredSubmissionJdbcReader",
-            "hands the stored form and version uids on untranslated",
-            "sql template_uid", "sql form_uid", "sql template_version_uid", "sql form_version_uid"),
-        breach(NORMALIZED + "jdbc.StoredSubmissionJdbcReader$HeadVersion",
-            "hands the stored form uid on untranslated",
-            "formUid"),
-        breach(ROOT + ".submission.feed.publisher.FormDefinitions",
-            "the feed keeps form definitions by form uid",
-            "forHead(formUid)", "forHead(pinnedVersionUid)"));
+        edge(NORMALIZED + "jdbc.StoredSubmissionJdbcReader",
+            "reads the form and pinned version a submission stores by uid, and turns them into ids once",
+            "sql template_uid", "sql template_version_uid"),
+        edge(NORMALIZED + "jdbc.StoredSubmissionJdbcReader$StoredForm",
+            "the stored form and pin uids as read, until the reader turns them into ids",
+            "templateUid", "templateVersionUid")
+        // Breaches, new code that keys by uid until a named change removes it: none now.
+    );
 
     // =================================================================================================================
     // 3. The rules, built from their predicates so that the fixtures below can show each failing

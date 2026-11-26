@@ -59,13 +59,13 @@ public class FormDefinitionJdbcReader {
         JOIN data_template_version v ON v.data_template_id = t.id
         CROSS JOIN LATERAL (SELECT CASE WHEN jsonb_typeof(v.fields) = 'array' THEN v.fields END AS fields) f""";
 
-    /** Only the forms named. */
+    /** Only the forms named, by id. */
     private static final String NAMED = """
 
-        WHERE t.uid IN (:formUids)""";
+        WHERE t.id IN (:formIds)""";
 
     private static final String DEFINITIONS = """
-        SELECT t.uid AS form_uid, t.id AS form_id, v.id AS version_id, v.uid AS version_uid, v.version_number,
+        SELECT t.id AS form_id, v.id AS version_id, v.version_number,
                v.sections::text AS sections, v.fields::text AS fields,
                (SELECT coalesce(jsonb_object_agg(de.uid, de.id), '{}'::jsonb)::text
                 FROM jsonb_array_elements(f.fields) AS e(field)
@@ -78,7 +78,7 @@ public class FormDefinitionJdbcReader {
         """ + VERSIONS;
 
     private static final String TOKENS = """
-        SELECT t.uid AS form_uid,
+        SELECT t.id AS form_id,
                """ + VERSION_MARK + """
          AS version_mark
         """ + VERSIONS;
@@ -118,7 +118,8 @@ public class FormDefinitionJdbcReader {
 
     /**
      * The ids of the form with this uid and of its version with that uid, read now, unlike the definitions a caller
-     * may keep: what a submission's record names its form and pinned version by.
+     * may keep. The edge where the uids a stored submission names (its form, and its pinned version) turn into the ids
+     * everything after it keys by; the stored-submission reader calls it once per form and pin it reads.
      *
      * @param versionUid the version's uid, or {@code null}
      */
@@ -130,13 +131,13 @@ public class FormDefinitionJdbcReader {
         return found.isEmpty() ? new FormIds(null, null) : found.get(0);
     }
 
-    /** The definition of the form with this uid (stored submissions name their form by uid), if it exists. */
-    public Optional<Snapshot> read(String formUid) {
-        return Optional.ofNullable(read(Set.of(formUid)).get(formUid));
+    /** The definition of the form with this id, if it has a stored version. */
+    public Optional<Snapshot> read(String formId) {
+        return Optional.ofNullable(read(Set.of(formId)).get(formId));
     }
 
     /**
-     * The definitions of every form with a stored version, by form uid, in one statement: what the feed's dictionary
+     * The definitions of every form with a stored version, by form id, in one statement: what the feed's dictionary
      * publishes. As {@link #read(Collection)}, nothing in the stored definitions makes the read fail.
      */
     public Map<String, Snapshot> readAll() {
@@ -144,34 +145,31 @@ public class FormDefinitionJdbcReader {
     }
 
     /**
-     * The definitions of the forms with these uids, by form uid. A uid that names no form has no entry: the caller
-     * then normalizes with no definition ({@link org.nmcpye.datarun.submission.normalized.NormalizationFlag#FORM_MISSING}).
-     * A stored field whose data element no longer exists is kept without an id, and one whose option set no longer
-     * exists without an option set; nothing in the stored definitions makes the read fail.
+     * The definitions of the forms with these ids, by form id. An id that names no form with a stored version has no
+     * entry: the caller then normalizes with no definition
+     * ({@link org.nmcpye.datarun.submission.normalized.NormalizationFlag#FORM_MISSING}). A stored field whose data
+     * element no longer exists is kept without an id, and one whose option set no longer exists without an option set;
+     * nothing in the stored definitions makes the read fail.
      */
-    public Map<String, Snapshot> read(Collection<String> formUids) {
-        if (formUids.isEmpty()) {
+    public Map<String, Snapshot> read(Collection<String> formIds) {
+        if (formIds.isEmpty()) {
             return Map.of();
         }
-        return definitions(DEFINITIONS + NAMED, Map.of("formUids", Set.copyOf(formUids)));
+        return definitions(DEFINITIONS + NAMED, Map.of("formIds", Set.copyOf(formIds)));
     }
 
     private Map<String, Snapshot> definitions(String statement, Map<String, ?> parameters) {
-        Map<String, String> formIds = new HashMap<>();
         Map<String, List<FormVersionDefinition>> versions = new HashMap<>();
         Map<String, List<String>> marks = new HashMap<>();
         jdbc.query(statement, parameters, rs -> {
-            String formUid = rs.getString("form_uid");
             String formId = rs.getString("form_id");
-            formIds.put(formUid, formId);
-            marks.computeIfAbsent(formUid, uid -> new ArrayList<>()).add(rs.getString("version_mark"));
+            marks.computeIfAbsent(formId, form -> new ArrayList<>()).add(rs.getString("version_mark"));
             try {
                 JsonNode fieldIds = objectMapper.readTree(rs.getString("field_ids"));
                 JsonNode optionSetIds = objectMapper.readTree(rs.getString("option_set_ids"));
-                versions.computeIfAbsent(formUid, uid -> new ArrayList<>()).add(FormVersionDefinition.parse(
+                versions.computeIfAbsent(formId, form -> new ArrayList<>()).add(FormVersionDefinition.parse(
                     formId,
                     rs.getString("version_id"),
-                    rs.getString("version_uid"),
                     rs.getInt("version_number"),
                     objectMapper.readTree(rs.getString("sections")),
                     objectMapper.readTree(rs.getString("fields")),
@@ -184,25 +182,25 @@ public class FormDefinitionJdbcReader {
             }
         });
         Map<String, Snapshot> forms = new HashMap<>();
-        versions.forEach((formUid, list) -> forms.put(formUid,
-            new Snapshot(FormDefinition.of(formIds.get(formUid), list), token(marks.get(formUid)))));
+        versions.forEach((formId, list) -> forms.put(formId,
+            new Snapshot(FormDefinition.of(formId, list), token(marks.get(formId)))));
         return Map.copyOf(forms);
     }
 
     /**
-     * The current change token of each form with these uids, without reading the definitions. A form gets no token
+     * The current change token of each form with these ids, without reading the definitions. A form gets no token
      * when it has no stored version: it does not exist, or every version was deleted. A caller keeping a definition
      * must treat a missing token as a change, and read again: {@link #read} then has no entry for the form either.
      */
-    public Map<String, String> changeTokens(Collection<String> formUids) {
-        if (formUids.isEmpty()) {
+    public Map<String, String> changeTokens(Collection<String> formIds) {
+        if (formIds.isEmpty()) {
             return Map.of();
         }
-        return tokens(TOKENS + NAMED, Map.of("formUids", Set.copyOf(formUids)));
+        return tokens(TOKENS + NAMED, Map.of("formIds", Set.copyOf(formIds)));
     }
 
     /**
-     * The current change token of every form with a stored version, by form uid, without reading the definitions: the
+     * The current change token of every form with a stored version, by form id, without reading the definitions: the
      * tokens of what {@link #readAll} would read now. A form missing from a set of tokens kept earlier was deleted, or
      * lost its last version.
      */
@@ -213,10 +211,10 @@ public class FormDefinitionJdbcReader {
     private Map<String, String> tokens(String statement, Map<String, ?> parameters) {
         Map<String, List<String>> marks = new HashMap<>();
         jdbc.query(statement, parameters, rs -> {
-            marks.computeIfAbsent(rs.getString("form_uid"), uid -> new ArrayList<>()).add(rs.getString("version_mark"));
+            marks.computeIfAbsent(rs.getString("form_id"), form -> new ArrayList<>()).add(rs.getString("version_mark"));
         });
         Map<String, String> tokens = new HashMap<>();
-        marks.forEach((formUid, list) -> tokens.put(formUid, token(list)));
+        marks.forEach((formId, list) -> tokens.put(formId, token(list)));
         return Map.copyOf(tokens);
     }
 

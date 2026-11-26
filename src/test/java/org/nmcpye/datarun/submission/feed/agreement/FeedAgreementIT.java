@@ -244,7 +244,7 @@ class FeedAgreementIT {
     @Test
     void theNormalizerAgreesWithTheOracleOnEveryHead() throws Exception {
         // batches of 3, so that heads cross batch boundaries
-        FeedAgreement.Report report = run(List.of(FORM_A, FORM_NONE), 3, SubmissionNormalizer::normalize);
+        FeedAgreement.Report report = run(List.of(FORM_A_ID, FeedAgreement.NO_FORM), 3, SubmissionNormalizer::normalize);
 
         assertThat(report.agrees()).as(report.text()).isTrue();
         assertThat(report.disagreementsByForm()).isEmpty();
@@ -269,7 +269,7 @@ class FeedAgreementIT {
             entry("normalization flags, PINNED_VERSION_MISSING", 4L),
             entry("normalization flags, FORM_MISSING", 1L),
             entry("normalization flags, DOCUMENT_MISSING", 1L));
-        assertThat(run(List.of(FORM_A, FORM_NONE), 500, SubmissionNormalizer::normalize).lines())
+        assertThat(run(List.of(FORM_A_ID, FeedAgreement.NO_FORM), 500, SubmissionNormalizer::normalize).lines())
             .as("the batch size changes no count").isEqualTo(report.lines());
     }
 
@@ -285,8 +285,8 @@ class FeedAgreementIT {
     /** The harness is not vacuous: a normalizer that drops a value and renames a row is caught, and its form named. */
     @Test
     void aFaultyNormalizerIsCaughtAndItsFormNamed() throws Exception {
-        FeedAgreement.Report report = run(List.of(FORM_A, FORM_NONE), 500, changing("01JAGSB0000000000000000001",
-            real -> {
+        FeedAgreement.Report report = run(List.of(FORM_A_ID, FeedAgreement.NO_FORM), 500,
+            changing("01JAGSB0000000000000000001", real -> {
                 List<FieldValue> values = real.values().subList(1, real.values().size());
                 List<NormalizedRow> rows = new ArrayList<>(real.rows());
                 NormalizedRow first = rows.get(0);
@@ -307,15 +307,15 @@ class FeedAgreementIT {
             entry(FeedAgreement.ROWS_MISSING, 1L),
             entry(FeedAgreement.ROWS_EXTRA, 1L),
             entry(FeedAgreement.FORM_DIFFERS, 1L));
-        assertThat(report.disagreementsByForm()).containsOnlyKeys(FORM_A);
-        assertThat(report.text()).contains("form agFormA0001: mapped missing 3; mapped extra 2; rows missing 1; "
+        assertThat(report.disagreementsByForm()).containsOnlyKeys(FORM_A_ID);
+        assertThat(report.text()).contains("form " + FORM_A_ID + ": mapped missing 3; mapped extra 2; rows missing 1; "
             + "rows extra 1; form or version 1;");
     }
 
     /** A value kept under another field than the head's rule gives it is caught, though its path and value agree. */
     @Test
     void aValueUnderTheWrongFieldIdIsCaught() throws Exception {
-        FeedAgreement.Report report = run(List.of(FORM_A), 500, changing("01JAGSB0000000000000000001", real -> {
+        FeedAgreement.Report report = run(List.of(FORM_A_ID), 500, changing("01JAGSB0000000000000000001", real -> {
             List<FieldValue> values = new ArrayList<>(real.values());
             FieldValue title = values.get(0);
             values.set(0, new FieldValue("01JAGDE0000000000000000003", title.sectionId(), title.path(), title.value(),
@@ -335,7 +335,7 @@ class FeedAgreementIT {
     /** A value the head's rule maps, kept as unmapped at its own path, is caught: the two kinds are compared apart. */
     @Test
     void aWronglyUnmappedValueIsCaught() throws Exception {
-        FeedAgreement.Report report = run(List.of(FORM_A), 500, changing("01JAGSB0000000000000000001", real -> {
+        FeedAgreement.Report report = run(List.of(FORM_A_ID), 500, changing("01JAGSB0000000000000000001", real -> {
             FieldValue title = real.values().get(0);
             List<UnmappedValue> unmapped = new ArrayList<>(real.unmapped());
             unmapped.add(new UnmappedValue(title.path(), title.value(), UnmappedReason.PATH_NOT_IN_FORM));
@@ -357,7 +357,7 @@ class FeedAgreementIT {
      */
     @Test
     void whatTheNormalizerKeepsWholeIsItsOwnCategory() throws Exception {
-        FeedAgreement.Report report = run(List.of(FORM_KEEP), 500, SubmissionNormalizer::normalize);
+        FeedAgreement.Report report = run(List.of(FORM_KEEP_ID), 500, SubmissionNormalizer::normalize);
 
         assertThat(report.agrees()).as(report.text()).isTrue();
         assertThat(report.lines()).contains(
@@ -379,7 +379,7 @@ class FeedAgreementIT {
                 "FEED_AGREEMENT_USER", PG.getUsername(),
                 "FEED_AGREEMENT_PASSWORD", PG.getPassword(),
                 "FEED_AGREEMENT_DATABASE", PG.getDatabaseName(),
-                "FEED_AGREEMENT_FORMS", FORM_A + "," + FORM_NONE), out);
+                "FEED_AGREEMENT_FORMS", FORM_A_ID + "," + FeedAgreement.NO_FORM), out);
 
             assertThat(report.agrees()).isTrue();
             assertThat(java.nio.file.Files.readString(out)).isEqualTo(report.text())

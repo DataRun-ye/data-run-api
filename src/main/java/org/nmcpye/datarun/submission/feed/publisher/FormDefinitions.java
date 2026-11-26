@@ -44,34 +44,35 @@ final class FormDefinitions {
     }
 
     /**
-     * The definition of the form with this uid, or {@code null} when none is stored (the normalizer then flags
+     * The definition of the form with this id, or {@code null} when none is stored (the normalizer then flags
      * {@code FORM_MISSING}).
      *
-     * @param formUid          the form's uid, as the submission stores it; {@code null} gives {@code null}
-     * @param pinnedVersionUid the uid of the version the head is pinned to, or {@code null}
+     * @param formId          the form's id, as the stored-submission reader resolved it; {@code null} gives
+     *                        {@code null}
+     * @param pinnedVersionId the id of the version the head is pinned to, or {@code null}
      */
-    FormDefinition forHead(FormDefinitionJdbcReader reader, String formUid, String pinnedVersionUid) {
-        if (formUid == null) {
+    FormDefinition forHead(FormDefinitionJdbcReader reader, String formId, String pinnedVersionId) {
+        if (formId == null) {
             return null;
         }
         long now = nanoTime.getAsLong();
-        Kept entry = kept.get(formUid);
-        boolean pinnedUnknown = pinnedVersionUid != null && (entry == null || entry.definition() == null
-            || entry.definition().versionByUid(pinnedVersionUid).isEmpty());
+        Kept entry = kept.get(formId);
+        boolean pinnedUnknown = pinnedVersionId != null && (entry == null || entry.definition() == null
+            || entry.definition().versionById(pinnedVersionId).isEmpty());
         if (entry != null && !pinnedUnknown) {
             if (now - entry.checkedAtNanos() < CHECK_EVERY.toNanos()) {
                 return entry.definition();
             }
-            String token = reader.changeTokens(Set.of(formUid)).get(formUid);
+            String token = reader.changeTokens(Set.of(formId)).get(formId);
             if (Objects.equals(token, entry.token())) {
-                kept.put(formUid, new Kept(entry.definition(), entry.token(), now));
+                kept.put(formId, new Kept(entry.definition(), entry.token(), now));
                 return entry.definition();
             }
         }
-        Optional<FormDefinitionJdbcReader.Snapshot> read = reader.read(formUid);
+        Optional<FormDefinitionJdbcReader.Snapshot> read = reader.read(formId);
         Kept fresh = new Kept(read.map(FormDefinitionJdbcReader.Snapshot::definition).orElse(null),
             read.map(FormDefinitionJdbcReader.Snapshot::changeToken).orElse(null), now);
-        kept.put(formUid, fresh);
+        kept.put(formId, fresh);
         return fresh.definition();
     }
 }

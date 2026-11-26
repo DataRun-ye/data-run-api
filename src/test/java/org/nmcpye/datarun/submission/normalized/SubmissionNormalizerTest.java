@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.nmcpye.datarun.submission.normalized.StoredForms.FORM_UID;
+import static org.nmcpye.datarun.submission.normalized.StoredForms.FORM_ID;
 import static org.nmcpye.datarun.submission.normalized.StoredForms.fieldId;
 import static org.nmcpye.datarun.submission.normalized.StoredForms.json;
 import static org.nmcpye.datarun.submission.normalized.StoredForms.text;
@@ -30,7 +30,7 @@ class SubmissionNormalizerTest {
     private static final String FORM = "5f2a9c0b1d3e4f5061728394";
     private static final String SUBMISSION = "01J2Q7Y0V6M3N4P5R6S7T8V9WX";
 
-    private static final FormVersionDefinition V1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+    private static final FormVersionDefinition V1 = version("01JV0000000000000000000001", 1)
         .section("details", false)
         .section("items", true)
         .field("deUidOldNote", "details", "old_note", "Text")
@@ -38,7 +38,7 @@ class SubmissionNormalizerTest {
         .field("deUidCount01", "items", "count", "Integer")
         .build(FORM);
 
-    private static final FormVersionDefinition V2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+    private static final FormVersionDefinition V2 = version("01JV0000000000000000000002", 2)
         .section("details", false)
         .section("details.more", false)
         .section("other", false)
@@ -60,7 +60,7 @@ class SubmissionNormalizerTest {
     private static final FormDefinition FORM_DEFINITION = FormDefinition.of(FORM, List.of(V1, V2));
 
     private static NormalizedSubmission normalize(String document) {
-        return SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000002", text(document)),
+        return SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000002", text(document)),
             FORM_DEFINITION);
     }
 
@@ -106,12 +106,12 @@ class SubmissionNormalizerTest {
     @Test
     void aSectionRenamedWithBothNamesStoredKeepsThePinnedPlacement() {
         // the review's probe {a: {q: 1}, b: {q: 2}}: section a in version 1 became b in version 2, the pinned one
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .section("a", false).field("deUidQ000001", "a", "q", "Integer").build(FORM);
-        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", 2)
             .section("b", false).field("deUidQ000001", "b", "q", "Integer").build(FORM);
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000002", text("{'a': {'q': 1}, 'b': {'q': 2}}")),
+            new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000002", text("{'a': {'q': 1}, 'b': {'q': 2}}")),
             FormDefinition.of(FORM, List.of(v1, v2)));
 
         assertThat(normalized.values())
@@ -203,14 +203,14 @@ class SubmissionNormalizerTest {
 
     @Test
     void aRowWithoutAStoredIdGetsTheDerivedIdOfThePublishedRecipe() {
-        FormVersionDefinition version = version("01JV0000000000000000000009", "fvUid000009", 9)
+        FormVersionDefinition version = version("01JV0000000000000000000009", 9)
             .section("visit", false)
             .section("visit.households", true)
             .section("visit.households.members", true)
             .field("deUidMember", "visit.households.members", "age", "Integer")
             .build(FORM);
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000009", text("""
+            new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000009", text("""
                 {'visit': {'households': [
                    {'members': [{'age': 1}]},
                    {'_id': '01J2Q7Y0V6M3N4P5R6S7T8V9WY', 'members': [{'_id': '', 'age': 2}, {'age': 3}]}]}}""")),
@@ -229,7 +229,7 @@ class SubmissionNormalizerTest {
                     RowIdOrigin.DERIVED, "01J2Q7Y0V6M3N4P5R6S7T8V9WY", 1),
                 tuple("dd2bccab-dd79-57f4-a8de-07ab2df663f7", RowIdOrigin.DERIVED, "01J2Q7Y0V6M3N4P5R6S7T8V9WY", 2));
         // the same document gives the same derived ids every time
-        assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000009",
+        assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000009",
             text("{'visit': {'households': [{'members': [{'age': 1}]}]}}")),
             FormDefinition.of(FORM, List.of(version))).rows().get(0).id()).isEqualTo(firstHousehold);
     }
@@ -335,14 +335,14 @@ class SubmissionNormalizerTest {
     @Test
     void withoutThePinnedVersionsValueTheFirstInWalkOrderStays() {
         // two older names of one field, neither from the pinned version
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .field("deUidRenamed", null, "alpha", "Text").build(FORM);
-        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", 2)
             .field("deUidRenamed", null, "beta", "Text").build(FORM);
-        FormVersionDefinition v3 = version("01JV0000000000000000000003", "fvUid000003", 3)
+        FormVersionDefinition v3 = version("01JV0000000000000000000003", 3)
             .field("deUidRenamed", null, "gamma", "Text").build(FORM);
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000003", text("{'beta': 'b', 'alpha': 'a'}")),
+            new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000003", text("{'beta': 'b', 'alpha': 'a'}")),
             FormDefinition.of(FORM, List.of(v1, v2, v3)));
 
         assertThat(normalized.values()).extracting(FieldValue::path).containsExactly("alpha");
@@ -371,10 +371,10 @@ class SubmissionNormalizerTest {
         String document = text("{'_status': 'DONE', 'details': {'choices': ['a']}, 'items': [{'count': 1}]}");
 
         NormalizedSubmission first = SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000002", document), FORM_DEFINITION);
+            new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000002", document), FORM_DEFINITION);
         ((ArrayNode) first.values().get(0).value()).add("changed");
         NormalizedSubmission second = SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000002", document), FORM_DEFINITION);
+            new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000002", document), FORM_DEFINITION);
 
         assertThat(second.values().get(0).value()).isEqualTo(json("['a']"));
     }
@@ -384,7 +384,7 @@ class SubmissionNormalizerTest {
         for (String notJson : List.of("{'title': ", "{'title': 'T'} trailing", "{'n': NaN}", "")) {
             String stored = text(notJson);
             NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-                new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000002", stored), FORM_DEFINITION);
+                new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000002", stored), FORM_DEFINITION);
 
             assertThat(normalized.values()).as(notJson).isEmpty();
             assertThat(normalized.unmapped()).as(notJson)
@@ -398,13 +398,13 @@ class SubmissionNormalizerTest {
             java.util.stream.Stream.of("1e10000", "1e-10000")).toList()) {
             for (String stored : List.of(number, "{\"title\": " + number + "}")) {
                 assertThat(SubmissionNormalizer.normalize(
-                    new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000002", stored),
+                    new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000002", stored),
                     FORM_DEFINITION).flags()).as(stored).containsExactly(entry(NormalizationFlag.DOCUMENT_NOT_PARSED, 1));
             }
         }
         // deeper than Jackson's limit of 1,000 levels
         String tooDeep = "{\"k\":".repeat(1_001) + "1" + "}".repeat(1_001);
-        assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000002", tooDeep),
+        assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000002", tooDeep),
             FORM_DEFINITION).flags()).containsExactly(entry(NormalizationFlag.DOCUMENT_NOT_PARSED, 1));
     }
 
@@ -429,14 +429,14 @@ class SubmissionNormalizerTest {
             .containsExactly(tuple("", UnmappedReason.DOCUMENT_NOT_AN_OBJECT, "[\"a\"]"));
         assertThat(array.flags()).containsExactly(entry(NormalizationFlag.DOCUMENT_NOT_AN_OBJECT, 1));
         NormalizedSubmission missing = SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000002", null), FORM_DEFINITION);
+            new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000002", null), FORM_DEFINITION);
         assertThat(missing.values()).isEmpty();
         assertThat(missing.unmapped()).isEmpty();
         assertThat(missing.rows()).isEmpty();
         assertThat(missing.flags()).containsExactly(entry(NormalizationFlag.DOCUMENT_MISSING, 1));
         // the JSON null means what SQL NULL means
         NormalizedSubmission jsonNull = SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000002", " null "), FORM_DEFINITION);
+            new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000002", " null "), FORM_DEFINITION);
         assertThat(jsonNull.values()).isEmpty();
         assertThat(jsonNull.unmapped()).isEmpty();
         assertThat(jsonNull.flags()).containsExactly(entry(NormalizationFlag.DOCUMENT_MISSING, 1));
@@ -447,7 +447,7 @@ class SubmissionNormalizerTest {
     @Test
     void aSubmissionWhosePinnedVersionIsGoneResolvesThroughTheFormsOtherVersions() {
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, "fvUidGone00",
+            new StoredSubmission(SUBMISSION, FORM_ID, "01JVGONE000000000000000000",
                 text("{'title': 'T', 'details': {'old_note': 'n', 'nowhere': 1}, 'items': [{'count': 2}]}")),
             FORM_DEFINITION);
 
@@ -462,14 +462,14 @@ class SubmissionNormalizerTest {
         assertThat(normalized.flags()).containsOnly(
             entry(NormalizationFlag.PINNED_VERSION_MISSING, 1), entry(NormalizationFlag.PATH_NOT_IN_FORM, 1));
         assertThat(SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, null, text("{'title': 'T'}")),
+            new StoredSubmission(SUBMISSION, FORM_ID, null, text("{'title': 'T'}")),
             FORM_DEFINITION).flagged(NormalizationFlag.PINNED_VERSION_MISSING)).isEqualTo(1);
     }
 
     @Test
     void withoutAStoredDefinitionOfTheFormEveryValueIsUnmappedAndFlagged() {
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000002",
+            new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000002",
                 text("{'title': 'T', 'details': {'visit_day': '2026-12-03'}, 'items': [{'_id': 'x', 'count': 2}]}")),
             null);
 
@@ -488,11 +488,10 @@ class SubmissionNormalizerTest {
 
     @Test
     void aValueOfAFieldWhoseDataElementIsGoneIsUnmappedAndFlagged() {
-        FormVersionDefinition version = FormVersionDefinition.parse(FORM, "01JV0000000000000000000007", "fvUid000007",
-            7, json("[]"), json("[{'id': 'deUidGone001', 'name': 'gone', 'path': 'deUidGone001', 'type': 'Text'}]"),
+        FormVersionDefinition version = FormVersionDefinition.parse(FORM, "01JV0000000000000000000007", 7, json("[]"), json("[{'id': 'deUidGone001', 'name': 'gone', 'path': 'deUidGone001', 'type': 'Text'}]"),
             uid -> null, uid -> null);
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000007", text("{'gone': 'kept'}")),
+            new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000007", text("{'gone': 'kept'}")),
             FormDefinition.of(FORM, List.of(version)));
 
         assertThat(normalized.values()).isEmpty();
@@ -507,7 +506,7 @@ class SubmissionNormalizerTest {
         String document = "{\"ghost\":" + "{\"k\":".repeat(998) + "{\"leaf\":1}" + "}".repeat(998) + "}";
 
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000002", document), FORM_DEFINITION);
+            new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000002", document), FORM_DEFINITION);
 
         assertThat(normalized.unmapped()).hasSize(1);
         UnmappedValue deep = normalized.unmapped().get(0);
@@ -518,12 +517,12 @@ class SubmissionNormalizerTest {
 
     @Test
     void aValueAtAPathReusedForAnotherFieldIsResolvedAsUsualAndFlagged() {
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .field("deUidReuse01", null, "reused", "Text").field("deUidSame001", null, "same", "Text").build(FORM);
-        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", 2)
             .field("deUidReuse02", null, "reused", "Text").field("deUidSame001", null, "same", "Text").build(FORM);
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000002", text("{'reused': 'r', 'same': 's'}")),
+            new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000002", text("{'reused': 'r', 'same': 's'}")),
             FormDefinition.of(FORM, List.of(v1, v2)));
 
         assertThat(normalized.values()).extracting(FieldValue::path, FieldValue::fieldId)
@@ -535,14 +534,14 @@ class SubmissionNormalizerTest {
     void aDocumentAsDeepAsJacksonParsesNeedsLittleStack() throws Exception {
         // a field holding 998 nested objects, kept whole: parsing is iterative, the walk stops at MAX_DEPTH and no
         // value is copied, so a 256 KB stack is enough
-        FormVersionDefinition version = version("01JV0000000000000000000005", "fvUid000005", 5)
+        FormVersionDefinition version = version("01JV0000000000000000000005", 5)
             .field("deUidDeep001", null, "deep", "Text").build(FORM);
         String document = "{\"deep\":" + "{\"k\":".repeat(998) + "1" + "}".repeat(998) + "}";
         AtomicReference<Object> outcome = new AtomicReference<>();
         Thread small = new Thread(null, () -> {
             try {
                 outcome.set(SubmissionNormalizer.normalize(
-                    new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000005", document),
+                    new StoredSubmission(SUBMISSION, FORM_ID, "01JV0000000000000000000005", document),
                     FormDefinition.of(FORM, List.of(version))));
             } catch (Throwable failure) {
                 outcome.set(failure);

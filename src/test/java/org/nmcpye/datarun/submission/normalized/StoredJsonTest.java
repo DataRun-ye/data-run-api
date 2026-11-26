@@ -10,7 +10,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.nmcpye.datarun.submission.normalized.StoredForms.FORM_UID;
+import static org.nmcpye.datarun.submission.normalized.StoredForms.FORM_ID;
 import static org.nmcpye.datarun.submission.normalized.StoredForms.version;
 
 /**
@@ -50,7 +50,7 @@ class StoredJsonTest {
     @Test
     void aNormalizedValueWrittenForTheFeedKeepsTheStoredNumbersText() {
         String form = "01HZY8X3K2ABCDEFGHJKMNPQRS";
-        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", 1)
             .field("deUidAmount1", null, "amount", "Number")
             .field("deUidBig0001", null, "big", "Integer")
             .field("deUidScale01", null, "scaled", "Number")
@@ -58,7 +58,7 @@ class StoredJsonTest {
         String stored = "{\"big\": " + DIGITS_401 + ", \"amount\": 12345678901234567890.123, \"scaled\": 2.50}";
 
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission("01J2Q7Y0V6M3N4P5R6S7T8V9WX", FORM_UID, "fvUid000001", stored), FormDefinition.of(form,
+            new StoredSubmission("01J2Q7Y0V6M3N4P5R6S7T8V9WX", FORM_ID, "01JV0000000000000000000001", stored), FormDefinition.of(form,
                 List.of(v1)));
 
         assertThat(normalized.values()).extracting(v -> StoredJson.write(v.value()))

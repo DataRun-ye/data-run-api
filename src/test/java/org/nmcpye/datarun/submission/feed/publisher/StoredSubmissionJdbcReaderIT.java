@@ -21,10 +21,11 @@ import java.util.function.Supplier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.ACTIVITY_ID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.ASSIGNMENT_ID;
-import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.FORM_UID;
+import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.FORM_ID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.MISSING_ASSIGNMENT_UID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.ORG_UNIT_ID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.TEAM_ID;
+import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.VERSION_2_ID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.VERSION_2_UID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.document;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.row;
@@ -83,8 +84,8 @@ class StoredSubmissionJdbcReaderIT {
         assertThat(head.version()).isEqualTo(1);
         assertThat(head.deleted()).isFalse();
         assertThat(head.submission().id()).isEqualTo(submission.id());
-        assertThat(head.submission().formUid()).isEqualTo(FORM_UID);
-        assertThat(head.submission().formVersionUid()).isEqualTo(VERSION_2_UID);
+        assertThat(head.submission().formId()).as("the stored form uid, as its id").isEqualTo(FORM_ID);
+        assertThat(head.submission().formVersionId()).as("the pinned version uid, as its id").isEqualTo(VERSION_2_ID);
         assertThat(head.submission().formData()).contains("second").doesNotContain("first");
         assertThat(head.placement()).isEqualTo(new Placement(ASSIGNMENT_ID, TEAM_ID, ORG_UNIT_ID, ACTIVITY_ID));
         assertThat(head.placement().complete()).isTrue();
@@ -133,7 +134,7 @@ class StoredSubmissionJdbcReaderIT {
         assertThat(page).extracting(HeadVersion::submissionId)
             .containsExactly(first.id(), second.id(), withoutRevision.id());
         assertThat(page).extracting(HeadVersion::version).containsExactly(0L, 0L, null);
-        assertThat(page).extracting(HeadVersion::formUid).containsOnly(FORM_UID);
+        assertThat(page).extracting(HeadVersion::formId).containsOnly(FORM_ID);
         assertThat(read(() -> reader.headVersionsAfter(first.id(), 1))).extracting(HeadVersion::submissionId)
             .containsExactly(second.id());
     }

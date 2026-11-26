@@ -18,8 +18,8 @@ final class StoredForms {
 
     static final ObjectMapper JSON = new ObjectMapper();
 
-    /** The uid of the form the synthetic submissions name; the normalizer only carries it. */
-    static final String FORM_UID = "fmUid000001";
+    /** The id of the form the synthetic submissions name; the normalizer only carries it. */
+    static final String FORM_ID = "01JF0000000000000000000001";
 
     /** Data element uid to its stored id. */
     static final Map<String, String> FIELD_IDS = new HashMap<>();
@@ -35,8 +35,8 @@ final class StoredForms {
         return FIELD_IDS.computeIfAbsent(uid, u -> String.format("01J%023d", Math.abs(u.hashCode()) % 1_000_000_000L));
     }
 
-    static VersionBuilder version(String id, String uid, int number) {
-        return new VersionBuilder(id, uid, number);
+    static VersionBuilder version(String id, int number) {
+        return new VersionBuilder(id, number);
     }
 
     /** JSON text written with single quotes, as a stored document's text. */
@@ -54,14 +54,12 @@ final class StoredForms {
 
     static final class VersionBuilder {
         private final String id;
-        private final String uid;
         private final int number;
         private final ArrayNode sections = JSON.createArrayNode();
         private final ArrayNode fields = JSON.createArrayNode();
 
-        private VersionBuilder(String id, String uid, int number) {
+        private VersionBuilder(String id, int number) {
             this.id = id;
-            this.uid = uid;
             this.number = number;
         }
 
@@ -100,7 +98,7 @@ final class StoredForms {
         }
 
         FormVersionDefinition build(String formId) {
-            return FormVersionDefinition.parse(formId, id, uid, number, sections, fields, FIELD_IDS::get,
+            return FormVersionDefinition.parse(formId, id, number, sections, fields, FIELD_IDS::get,
                 OPTION_SET_IDS::get);
         }
     }

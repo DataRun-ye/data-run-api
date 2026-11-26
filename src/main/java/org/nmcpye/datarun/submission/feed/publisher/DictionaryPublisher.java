@@ -160,7 +160,7 @@ public class DictionaryPublisher {
         log.info("Published the feed's dictionary: {} field placements and {} sections of {} form versions",
             dictionary.fields().size(), dictionary.sections().size(), dictionary.versionCount());
         Map<String, String> tokens = new HashMap<>();
-        forms.forEach((formUid, snapshot) -> tokens.put(formUid, snapshot.changeToken()));
+        forms.forEach((formId, snapshot) -> tokens.put(formId, snapshot.changeToken()));
         return Map.copyOf(tokens);
     }
 

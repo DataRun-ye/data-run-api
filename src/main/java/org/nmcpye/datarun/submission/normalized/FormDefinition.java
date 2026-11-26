@@ -44,8 +44,8 @@ public final class FormDefinition {
 
     private final String id;
     private final List<FormVersionDefinition> versions;
-    private final Map<String, FormVersionDefinition> versionsByUid;
-    private final Map<String, Map<String, Resolution[]>> resolutionsByVersionUid;
+    private final Map<String, FormVersionDefinition> versionsById;
+    private final Map<String, Map<String, Resolution[]>> resolutionsByVersionId;
     private final Map<String, Resolution[]> resolutionsWithoutPin;
     private final Set<String> ambiguousPaths;
     private final Map<String, Map<String, List<String>>> dataPathsByField;
@@ -58,21 +58,21 @@ public final class FormDefinition {
         List<FormVersionDefinition> newestFirst = new ArrayList<>(versions);
         newestFirst.sort(Comparator.comparingInt(FormVersionDefinition::number).reversed());
         this.versions = List.copyOf(newestFirst);
-        Map<String, FormVersionDefinition> byUid = new HashMap<>();
+        Map<String, FormVersionDefinition> byId = new HashMap<>();
         Set<Integer> numbers = new HashSet<>();
         for (FormVersionDefinition version : this.versions) {
-            if (byUid.put(version.uid(), version) != null || !numbers.add(version.number())) {
-                throw new IllegalArgumentException("form " + id + " has two versions with uid " + version.uid()
+            if (byId.put(version.id(), version) != null || !numbers.add(version.number())) {
+                throw new IllegalArgumentException("form " + id + " has two versions with id " + version.id()
                     + " or number " + version.number());
             }
         }
-        this.versionsByUid = Map.copyOf(byUid);
+        this.versionsById = Map.copyOf(byId);
         Map<String, List<Candidate>> candidates = candidatesByPath(this.versions);
         Map<String, Map<String, Resolution[]>> byVersion = new HashMap<>();
         for (FormVersionDefinition pinned : this.versions) {
-            byVersion.put(pinned.uid(), resolveAll(candidates, pinned));
+            byVersion.put(pinned.id(), resolveAll(candidates, pinned));
         }
-        this.resolutionsByVersionUid = Map.copyOf(byVersion);
+        this.resolutionsByVersionId = Map.copyOf(byVersion);
         this.resolutionsWithoutPin = resolveAll(candidates, null);
         this.ambiguousPaths = ambiguous(candidates);
         this.dataPathsByField = dataPathsByField(this.versions);
@@ -163,7 +163,7 @@ public final class FormDefinition {
 
     /** The placements of one of this form's versions that hold its values ({@link Placements}). */
     public Placements placements(FormVersionDefinition version) {
-        FormVersionDefinition own = versionsByUid.get(version.uid());
+        FormVersionDefinition own = versionsById.get(version.id());
         if (own == null || !own.equals(version)) {
             throw new IllegalArgumentException("form " + id + " has no version " + version.id());
         }
@@ -194,9 +194,9 @@ public final class FormDefinition {
         return new Placements(published, pathTakenByAnother, placedTwice);
     }
 
-    /** The version a stored submission names by its uid. */
-    public Optional<FormVersionDefinition> versionByUid(String uid) {
-        return Optional.ofNullable(uid == null ? null : versionsByUid.get(uid));
+    /** The version with this id, which a stored submission's pin resolves to. */
+    public Optional<FormVersionDefinition> versionById(String id) {
+        return Optional.ofNullable(id == null ? null : versionsById.get(id));
     }
 
     /**
@@ -207,7 +207,7 @@ public final class FormDefinition {
      */
     Resolution resolve(FormVersionDefinition pinned, String path, StoredShape shape) {
         Map<String, Resolution[]> resolutions = pinned == null ? resolutionsWithoutPin
-            : resolutionsByVersionUid.getOrDefault(pinned.uid(), resolutionsWithoutPin);
+            : resolutionsByVersionId.getOrDefault(pinned.id(), resolutionsWithoutPin);
         Resolution[] byShape = resolutions.get(path);
         return byShape == null ? null : byShape[shape.ordinal()];
     }

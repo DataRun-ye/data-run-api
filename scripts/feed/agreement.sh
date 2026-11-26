@@ -11,7 +11,8 @@
 #   FEED_AGREEMENT_DATABASE    the name of that database: the run refuses unless it is connected to exactly it
 #   FEED_AGREEMENT_USER        a clone-only role that can read public and journal
 #   FEED_AGREEMENT_PASSWORD
-#   FEED_AGREEMENT_FORMS       optional: form uids, comma-separated; every form when unset
+#   FEED_AGREEMENT_FORMS       optional: form ids, comma-separated, "-" for heads whose form is not stored;
+#                              every form when unset
 #   FEED_AGREEMENT_BATCH       optional: heads per batch, 500 when unset
 #
 # Production's database host (datarun-prod-db.lab, 192.168.1.111) and database (nmcpdb) are refused unless

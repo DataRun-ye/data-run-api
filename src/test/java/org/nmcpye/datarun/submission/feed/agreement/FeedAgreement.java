@@ -67,9 +67,12 @@ import java.util.function.BiFunction;
  *
  * <p><b>Safety.</b> One {@code REPEATABLE READ READ ONLY} transaction, so every count comes from one snapshot and
  * nothing can be written; {@code work_mem} 8MB, no parallel workers, no JIT, a statement timeout, a lock timeout, and
- * an idle timeout; batches of heads by submission id. It prints counts and form uids, never a value or another id.</p>
+ * an idle timeout; batches of heads by submission id. It prints counts and form ids, never a value or another id.</p>
  */
 public final class FeedAgreement {
+
+    /** How the forms named, and the report, call the heads whose form is not stored: they have no form id. */
+    public static final String NO_FORM = "-";
 
     /** Every line that must read 0 starts with this. */
     public static final String AGREE = "agree: ";
@@ -116,11 +119,11 @@ public final class FeedAgreement {
      * measured, which forms (none: all), and how many heads per batch.
      */
     public record Settings(String jdbcUrl, String user, String password, String database, boolean production,
-                           List<String> formUids, int batchSize) {
+                           List<String> formIds, int batchSize) {
 
         public Settings {
             Objects.requireNonNull(jdbcUrl, "jdbcUrl");
-            formUids = formUids == null ? List.of() : List.copyOf(formUids);
+            formIds = formIds == null ? List.of() : List.copyOf(formIds);
             if (batchSize < 1) {
                 throw new IllegalArgumentException("a batch holds at least one head");
             }
@@ -143,7 +146,7 @@ public final class FeedAgreement {
         }
     }
 
-    /** The counts, line by line, and the agreement lines that are not 0, by form uid. */
+    /** The counts, line by line, and the agreement lines that are not 0, by form id. */
     public record Report(Map<String, Long> lines, Map<String, Map<String, Long>> disagreementsByForm) {
 
         /** Whether every agreement line reads 0. */
@@ -274,7 +277,8 @@ public final class FeedAgreement {
                 after = page.get(page.size() - 1).submissionId();
                 List<String> ids = new ArrayList<>();
                 for (StoredSubmissionJdbcReader.HeadVersion head : page) {
-                    if (!settings.formUids().isEmpty() && !settings.formUids().contains(head.formUid())) {
+                    if (!settings.formIds().isEmpty()
+                        && !settings.formIds().contains(head.formId() == null ? NO_FORM : head.formId())) {
                         continue;
                     }
                     if (head.version() == null) {
@@ -284,8 +288,8 @@ public final class FeedAgreement {
                     }
                 }
                 List<Head> heads = submissions.heads(ids).stream()
-                    .map(head -> new Head(head.submission().id(), head.submission().formUid(), head.version(),
-                        head.submission().formVersionUid(), head.submission().formData()))
+                    .map(head -> new Head(head.submission().id(), head.submission().formId(), head.version(),
+                        head.submission().formVersionId(), head.submission().formData()))
                     .sorted(Comparator.comparing(Head::submissionId))
                     .toList();
                 if (!heads.isEmpty()) {
@@ -312,8 +316,8 @@ public final class FeedAgreement {
         }
     }
 
-    /** One head of the journal and the submission's form uid. */
-    private record Head(String submissionId, String formUid, long version, String formVersionUid, String formData) {
+    /** One head of the journal, with the ids of its form and pinned version, as the read seam resolved them. */
+    private record Head(String submissionId, String formId, long version, String formVersionId, String formData) {
     }
 
     /** A value as compared: its row (null outside every row), its field id or data path, and its JSON, exact. */
@@ -374,9 +378,9 @@ public final class FeedAgreement {
             }
         }
         for (Head head : heads) {
-            FormDefinitionJdbcReader.Snapshot definition = definitions.get(head.formUid());
+            FormDefinitionJdbcReader.Snapshot definition = head.formId() == null ? null : definitions.get(head.formId());
             NormalizedSubmission normalized = normalizing.apply(
-                new StoredSubmission(head.submissionId(), head.formUid(), head.formVersionUid(), head.formData()),
+                new StoredSubmission(head.submissionId(), head.formId(), head.formVersionId(), head.formData()),
                 definition == null ? null : definition.definition());
             compare(head, oracle.get(head.submissionId()), normalized);
         }
@@ -451,7 +455,7 @@ public final class FeedAgreement {
         long header = Objects.equals(oracle.formId, normalized.formId())
             && Objects.equals(oracle.formVersionId, normalized.formVersionId()) ? 0 : 1;
 
-        String form = head.formUid();
+        String form = head.formId();
         disagree(form, "mapped missing", MAPPED_MISSING, mappedCounts[0]);
         disagree(form, "mapped extra", MAPPED_EXTRA, mappedCounts[1]);
         disagree(form, "mapped different", MAPPED_DIFFERENT, mappedCounts[2]);
@@ -591,10 +595,10 @@ public final class FeedAgreement {
         lines.merge(line, count, Long::sum);
     }
 
-    private void disagree(String formUid, String shortName, String line, long count) {
+    private void disagree(String formId, String shortName, String line, long count) {
         add(line, count);
         if (count > 0) {
-            byForm.computeIfAbsent(formUid == null ? "-" : formUid, f -> new LinkedHashMap<>())
+            byForm.computeIfAbsent(formId == null ? NO_FORM : formId, f -> new LinkedHashMap<>())
                 .merge(shortName, count, Long::sum);
         }
     }

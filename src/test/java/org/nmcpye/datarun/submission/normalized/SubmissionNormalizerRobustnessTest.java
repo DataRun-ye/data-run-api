@@ -14,7 +14,7 @@ import java.util.Random;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.nmcpye.datarun.submission.normalized.StoredForms.FORM_UID;
+import static org.nmcpye.datarun.submission.normalized.StoredForms.FORM_ID;
 import static org.nmcpye.datarun.submission.normalized.StoredForms.version;
 
 /**
@@ -28,7 +28,7 @@ class SubmissionNormalizerRobustnessTest {
     private static final String FORM = "5f2a9c0b1d3e4f5061728394";
     private static final String SUBMISSION = "01J2Q7Y0V6M3N4P5R6S7T8V9WX";
 
-    private static final FormVersionDefinition V1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+    private static final FormVersionDefinition V1 = version("01JV0000000000000000000001", 1)
         .section("details", false)
         .section("items", false)
         .field("deUidOldNote", "details", "note", "Text")
@@ -37,7 +37,7 @@ class SubmissionNormalizerRobustnessTest {
         .field("deUidStray01", null, "stray", "Text")
         .build(FORM);
 
-    private static final FormVersionDefinition V2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+    private static final FormVersionDefinition V2 = version("01JV0000000000000000000002", 2)
         .section("details", false)
         .section("items", true)
         .section("items.parts", true)
@@ -59,7 +59,7 @@ class SubmissionNormalizerRobustnessTest {
         "qty", "extra", "kind", "_id", "_index", "_parentId", "_submissionUid", "_status", "stray", "", "x.y"};
     private static final String[] IDS = {"01J2Q7Y0V6M3N4P5R6S7T8V9W1", "01j2q7y0v6m3n4p5r6s7t8v9w1",
         "01J2Q7Y0V6M3N4P5R6S7T8V9W2", "aB3dE5fG7hJ9kL1m", ""};
-    private static final String[] PINS = {"fvUid000002", "fvUid000001", "fvUidGone00", null};
+    private static final String[] PINS = {"01JV0000000000000000000002", "01JV0000000000000000000001", "01JVGONE000000000000000000", null};
 
     private static final JsonNodeFactory NODES = JsonNodeFactory.instance;
 
@@ -85,9 +85,9 @@ class SubmissionNormalizerRobustnessTest {
             }
 
             NormalizedSubmission normalized =
-                SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, FORM_UID, pin, stored), form);
+                SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, FORM_ID, pin, stored), form);
 
-            assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, FORM_UID, pin, stored), form))
+            assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, FORM_ID, pin, stored), form))
                 .as("deterministic").isEqualTo(normalized);
             flagsAgreeWithTheLists(normalized, form, pin);
             seen.addAll(normalized.flags().keySet());
@@ -111,7 +111,7 @@ class SubmissionNormalizerRobustnessTest {
         assertThat(normalized.flagged(NormalizationFlag.VALUE_ISSUE))
             .isEqualTo((int) values.stream().filter(v -> v.issue() != null).count());
         assertThat(normalized.flagged(NormalizationFlag.FORM_MISSING)).isEqualTo(form == null ? 1 : 0);
-        boolean pinned = form != null && form.versionByUid(pin).isPresent();
+        boolean pinned = form != null && form.versionById(pin).isPresent();
         assertThat(normalized.flagged(NormalizationFlag.PINNED_VERSION_MISSING)).isEqualTo(pinned ? 0 : 1);
         assertThat(normalized.flags().values()).allSatisfy(count -> assertThat(count).isPositive());
         assertThat(values).allSatisfy(v -> assertThat(v.value().isNull()).isFalse());

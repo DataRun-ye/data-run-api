@@ -22,16 +22,16 @@ import static org.mockito.Mockito.when;
 /** When the publisher reads a form's definition again, and when it uses the one it keeps. */
 class FormDefinitionsTest {
 
-    private static final String FORM = "fmUid000001";
+    private static final String FORM = "01JF0000000000000000000001";
 
     private final FormDefinitionJdbcReader reader = mock(FormDefinitionJdbcReader.class);
     private final AtomicLong clock = new AtomicLong();
     private final FormDefinitions definitions = new FormDefinitions(clock::get);
 
-    private static FormDefinitionJdbcReader.Snapshot snapshot(String token, String... versionUids) {
+    private static FormDefinitionJdbcReader.Snapshot snapshot(String token, String... versionIds) {
         List<FormVersionDefinition> versions = new java.util.ArrayList<>();
-        for (int i = 0; i < versionUids.length; i++) {
-            versions.add(new FormVersionDefinition("v-" + versionUids[i], versionUids[i], i + 1, List.of(), List.of()));
+        for (int i = 0; i < versionIds.length; i++) {
+            versions.add(new FormVersionDefinition(versionIds[i], i + 1, List.of(), List.of()));
         }
         return new FormDefinitionJdbcReader.Snapshot(FormDefinition.of("form-id", versions), token);
     }

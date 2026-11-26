@@ -18,22 +18,20 @@ import java.util.function.Function;
  * name, {@code label}, {@code order}, and for a field its {@code type} as stored, {@code mandatory} and the option
  * set its {@code optionSet} uid names.</p>
  *
- * @param id       the form version's stored id
- * @param uid      the form version's uid, by which stored submissions name their pinned version (internal)
+ * @param id       the form version's stored id, by which a stored submission's pinned version is known once its
+ *                 reader has resolved it
  * @param number   the version number; a form's versions have distinct numbers
  * @param sections the version's sections
  * @param fields   the version's fields
  */
 public record FormVersionDefinition(
     String id,
-    String uid,
     int number,
     List<SectionDefinition> sections,
     List<FieldDefinition> fields) {
 
     public FormVersionDefinition {
         Objects.requireNonNull(id, "id");
-        Objects.requireNonNull(uid, "uid");
         sections = List.copyOf(sections);
         fields = List.copyOf(fields);
     }
@@ -43,7 +41,6 @@ public record FormVersionDefinition(
      *
      * @param formId        the form's stored id (section ids derive from it)
      * @param id            the form version's stored id
-     * @param uid           the form version's uid
      * @param number        the version number
      * @param sections      the stored {@code sections} array; anything else holds no section
      * @param fields        the stored {@code fields} array; anything else holds no field
@@ -56,7 +53,6 @@ public record FormVersionDefinition(
     public static FormVersionDefinition parse(
         String formId,
         String id,
-        String uid,
         int number,
         JsonNode sections,
         JsonNode fields,
@@ -107,7 +103,7 @@ public record FormVersionDefinition(
                     integer(field.get("order"))));
             }
         }
-        return new FormVersionDefinition(id, uid, number, sectionList, fieldList);
+        return new FormVersionDefinition(id, number, sectionList, fieldList);
     }
 
     /** The path without its last dot-separated key; empty when it has one key. */

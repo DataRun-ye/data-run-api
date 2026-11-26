@@ -78,8 +78,8 @@ Where today's seams serve new code poorly:
   (`:36`), the v1 held-decision request (`:43`, `:51`). The upload answers `EntitySaveSummaryVM`, its failures
   as `ErrorCode` text ([`SubmissionUploads.java:495`](../../src/main/java/org/nmcpye/datarun/jpa/datasubmission/command/SubmissionUploads.java#L495)).
   `SubmissionActor` carries the login and the whole access snapshot ([`SubmissionActor.java:20`](../../src/main/java/org/nmcpye/datarun/jpa/datasubmission/command/SubmissionActor.java#L20)).
-- Form definitions are read by form uid only ([`FormDefinitionJdbcReader.java:102`](../../src/main/java/org/nmcpye/datarun/submission/normalized/jdbc/FormDefinitionJdbcReader.java#L102), `:120`),
-  and `StoredSubmission` takes the stored form and version uids.
+- Form definitions are read by form id, and `StoredSubmission` carries the form and version ids its reader
+  resolved from the stored uids (`StoredSubmissionJdbcReader`, through `FormDefinitionJdbcReader.ids`).
 - Stored references are uids: `data_submission` keeps form, version, assignment, team, org unit and activity
   by uid ([`DataSubmission.java:75`](../../src/main/java/org/nmcpye/datarun/jpa/datasubmission/DataSubmission.java#L75) to `:103`),
   and the journal's metadata copies them ([`20261124-submission-revision.xml:142`](../../src/main/resources/config/liquibase/changelog/data_submission/20261124-submission-revision.xml#L142)).
@@ -138,20 +138,15 @@ Known and unguarded: [`CacheConfiguration.java:139`](../../src/main/java/org/nmc
 of `etl`.
 
 Uids in new code and `outbox.processing` (owner, 2026-11-26: new work keys by ids, and the 11-character uid is an
-alias for installed phones only). An edge adapter turns the stored uids into ids; a breach keys by uid today.
+alias for installed phones only). An edge adapter turns the stored uids into ids; a breach keys by uid until a
+named change removes it, and none is listed now.
 
 | Class | Members | Kind | Why |
 | --- | --- | --- | --- |
 | `PlacementJdbcResolver.StoredPlacement` | `assignmentUid`, `teamUid`, `orgUnitUid`, `activityUid` | edge | the placement uids a revision stores, which the resolver turns into ids |
 | `FormDefinitionJdbcReader` | `ids(formUid, versionUid)` | edge | turns the form and version uids a stored submission names into ids |
 | `FormVersionDefinition` | `parse(fieldIdForUid, optionSetIdForUid)` | edge | turn the data element and option set uids a template's fields name into ids |
-| `StoredSubmission` | `formUid`, `formVersionUid` | breach | the stored form and pinned version reach the normalizer as uids, though the reader can resolve their ids |
-| `FormVersionDefinition` | `uid`, `parse(uid)` | breach | a version is known by its uid, to match the stored pin |
-| `FormDefinition` | `versionsByUid`, `resolutionsByVersionUid`, `versionByUid(uid)` | breach | versions are looked up by uid |
-| `FormDefinitionJdbcReader` | `read(formUid)`, `read(formUids)`, `changeTokens(formUids)`, SQL `form_uid`, `version_uid` | breach | definitions and change tokens are keyed by form uid, and versions by uid |
-| `StoredSubmissionJdbcReader` | SQL `template_uid`, `form_uid`, `template_version_uid`, `form_version_uid`; `HeadVersion.formUid` | breach | hands the stored form and version uids on untranslated |
-| `FormDefinitions` (the feed) | `forHead(formUid, pinnedVersionUid)` | breach | the feed keeps form definitions by form uid |
-| `SubmissionRevisionReader` | SQL `assignment_uid`, `template_version_uid` | breach | conflict detection compares the journal's assignment and form version by uid |
+| `StoredSubmissionJdbcReader` | SQL `template_uid`, `template_version_uid`; `StoredForm.templateUid`, `.templateVersionUid` | edge | reads the form and pinned version a submission stores by uid, and turns them into ids once |
 
 ## Gaps
 
@@ -160,7 +155,7 @@ Submission review (`docs/features/submission-review/spec.md`) needs these; the f
 | # | Need | Systems of record | Seam to build | Today |
 | --- | --- | --- | --- | --- |
 | 1 | Search, view and history: submissions by filters and by id | `data_submission`, journal | `StoredSubmissionJdbcReader` (built: by id and in batches); search by filters under the search guard still to add. It reads `journal.submission_revision` too, and `SubmissionWriteOwnershipTest`'s `NAMED_IN` ([`:124`](../../src/test/java/org/nmcpye/datarun/SubmissionWriteOwnershipTest.java#L124)) names it | the journal's `SubmissionRevisionReader` reads `data_submission` on its own |
-| 2 | Values typed for a form named by id; edits written back | form definitions | a read by form id, and the write direction (field id and row id to the stored place), in `submission.normalized` | uid-keyed reader; no write direction |
+| 2 | Values typed for a form named by id; edits written back | form definitions | the read by form id is built (`FormDefinitionJdbcReader.read`); the write direction (field id and row id to the stored place), in `submission.normalized`, still to add | no write direction |
 | 3 | Edits, moves, splits, deletes and restores | `data_submission`, journal | write-path commands for new code: `SubmissionCommand` variants keyed by submission id, with domain types and the journal's reason and detail, run in v2's idempotent transaction, answering a result of their own | every variant carries a client contract or a uid |
 | 4 | A move's destination rules; scope by activity, team, area | configuration, access scope | `PlacementJdbcResolver` (built: uids to ids); an assignment's forms and deleted state, and org unit ancestry, still to add. Review's own grants are new code | entities and v1 DTOs keyed by uid; the snapshot in uids |
 | 5 | View's entries; history's actor names | `reference_entry`, `app_user` | small readers by id | none |

@@ -97,7 +97,7 @@ public final class SubmissionNormalizer {
         if (form == null) {
             flags.put(NormalizationFlag.FORM_MISSING, 1);
         }
-        FormVersionDefinition pinned = definition.versionByUid(submission.formVersionUid()).orElse(null);
+        FormVersionDefinition pinned = definition.versionById(submission.formVersionId()).orElse(null);
         if (pinned == null) {
             flags.put(NormalizationFlag.PINNED_VERSION_MISSING, 1);
         }
