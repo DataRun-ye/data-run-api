@@ -49,4 +49,16 @@ public class SubmissionLock {
             new MapSqlParameterSource("timeout", Math.max(1, timeout.toMillis()) + "ms"), String.class);
         return uid == null ? null : submissions.findByUidForWrite(uid).orElse(null);
     }
+
+    /**
+     * The locked submission's document as the database prints it ({@code form_data::text}), or null when it has none:
+     * read in the same transaction, under the lock, so it is the state {@link #take} returned, with every number exact.
+     * A document loaded through Hibernate holds decimals as binary doubles.
+     *
+     * @param submissionId the locked submission's id ({@code data_submission.id})
+     */
+    public String documentText(String submissionId) {
+        return jdbc.queryForObject("SELECT form_data::text FROM data_submission WHERE id = :id",
+            new MapSqlParameterSource("id", submissionId), String.class);
+    }
 }

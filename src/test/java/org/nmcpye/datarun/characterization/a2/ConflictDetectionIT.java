@@ -174,6 +174,30 @@ class ConflictDetectionIT extends A2GoldenSupport {
         assertThat(conflicts(uid)).isEmpty();
     }
 
+    /**
+     * The stored state is compared exactly, as the database prints it: a decimal of 20 significant digits, and a copy
+     * whose value differs from it only past a binary double's precision, is a changed copy, not one equal to the current
+     * state, so after a server-side change it is kept aside.
+     */
+    @Test
+    void theStoredStateIsComparedExactlyPastADoublesPrecision() throws Exception {
+        String uid = uid("cdExact");
+        ObjectNode stored = ordinary(G3, uid, "first", "r1", "s1", 1);
+        ((ObjectNode) stored.get("main")).put("a2_amount", new java.math.BigDecimal("1.2345678901234567891"));
+        seed.storedBeforeTheJournal(uid, FIELD_1, ASSIGN_T1_V1, version("FORM_A.v1"), stored.toString());
+        seed.edit(uid, ADMIN, "edited on the server");
+        Item copy = formA(G3, uid, "edited on the server");
+        ((ObjectNode) copy.node.get("formData").get("main"))
+            .put("a2_amount", new java.math.BigDecimal("1.2345678901234567892"));
+
+        assertThat(answer(upload(G3, FIELD_1, copy))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).containsExactly("3 BASELINE MIGRATION", "4 UPDATE EDIT");
+        assertThat(conflicts(uid)).as("not equal to the current state").singleElement()
+            .satisfies(conflict -> assertThat(conflict).containsEntry("cause", "SERVER_SIDE_CHANGE")
+                .containsEntry("base_version", 3L));
+    }
+
     @Test
     void withoutAServerSideChangeAChangedCopyIsSavedAsToday() throws Exception {
         String uid = uid("cdApply");

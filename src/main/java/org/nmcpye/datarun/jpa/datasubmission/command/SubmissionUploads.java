@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.jpa.datasubmission.command;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -329,7 +328,8 @@ public class SubmissionUploads {
      * Conflict detection's check of a live upload item, or {@link ConflictCheck#OFF} for a new submission or with
      * detection off. Detection reads only plain values, built here and only when it runs, from what the upload holds
      * under the submission lock: the copy as received, tagged before any row id is minted; the stored submission's
-     * state, with whether the uploader made it; and the uploader's user id.
+     * state, its document read exactly as the database prints it ({@link SubmissionLock#documentText}), with whether
+     * the uploader made it; and the uploader's user id.
      */
     private ConflictCheck detectConflict(UploadRoute route, Supplier<JsonNode> uploadItem, DataSubmission submission,
                                          DataSubmission stored, TemplateVersionContext template,
@@ -346,20 +346,12 @@ public class SubmissionUploads {
         StoredState state = new StoredState(
             stored.getId(),
             stored.getLockVersion() == null ? 0 : stored.getLockVersion(),
-            documentText(stored.getFormData()),
+            submissionLock.documentText(stored.getId()),
             Boolean.TRUE.equals(stored.getDeleted()),
             stored.getAssignment(),
             stored.getStatus() == null ? null : stored.getStatus().name(),
             StoredSubmissionGuard.madeBy(stored, actor.access()));
         return conflictDetection.check(copy, state, actor.userId());
-    }
-
-    private String documentText(JsonNode document) {
-        try {
-            return document == null ? null : objectMapper.writeValueAsString(document);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("A stored document could not be written as JSON", e);
-        }
     }
 
     /**

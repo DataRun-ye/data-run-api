@@ -6,7 +6,8 @@ package org.nmcpye.datarun.jpa.datasubmission.conflict;
  *
  * @param submissionId      its id ({@code data_submission.id}), by which the journal and the conflicts name it
  * @param version           its version, the head revision's
- * @param documentText      its document as JSON text, or null when it has none
+ * @param documentText      its document as the database prints it ({@code form_data::text}), every number exact, or
+ *                          null when it has none
  * @param deleted           whether it is deleted
  * @param assignment        its assignment's uid
  * @param status            its progress status, or null when it has none
