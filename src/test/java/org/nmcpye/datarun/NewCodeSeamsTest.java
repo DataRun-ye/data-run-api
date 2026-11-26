@@ -266,8 +266,9 @@ class NewCodeSeamsTest {
         new Seam(DomainUserDetailsService.class.getName(), ROOT + ".web.v2.config..",
             "the v2 chain resolves the bearer token's account as v1 does: authentication, not scope"),
         new Seam(ROOT + ".outbox.processing..", ANY_NEW_CODE,
-            "the outputs' seam (ChangeOutput, on feat/feed-v1): a change as a submission id and version, wherever "
-                + "changes come from; never the outbox's table, rows or services"));
+            "the outputs' seam: ChangeOutput and ChangeReference (a change as a submission id and version, wherever "
+                + "changes come from), DeferredWork (an output's work behind the live changes) and ChangeBacklog (the "
+                + "changes recorded and not yet processed); never the outbox's table, rows or services"));
 
     /**
      * Code that stays and still depends on retiring code: each by its class and the class it depends on (nested
@@ -291,20 +292,19 @@ class NewCodeSeamsTest {
 
     /**
      * Where SQL in new code may name system-of-record tables: the seam that owns the read, by source path prefix.
-     * {@code data_submission} and the configuration tables are named only in the planned readers and the journal (and,
+     * {@code data_submission} and the configuration tables are named only in these readers and the journal (and,
      * outside new code, in the write path).
      */
     static final List<SqlSeam> SQL_SEAMS = List.of(
         new SqlSeam("org/nmcpye/datarun/submission/normalized/jdbc/FormDefinitionJdbcReader.java",
             Set.of("data_template", "data_template_version", "data_element", "option_set"), BUILT,
-            "the normalizer's form definitions"),
-        // PLANNED (engineering, 2026-11-26), being built for the feed: until they exist here, SQL naming their tables
-        // anywhere else in new code fails the tripwire. Once built, mark them BUILT.
+            "the normalizer's form definitions, and a form's and a version's ids by uid"),
+        // Planned by engineering (2026-11-26) and built for the feed.
         new SqlSeam("org/nmcpye/datarun/submission/normalized/jdbc/StoredSubmissionJdbcReader.java",
-            Set.of("data_submission"), PLANNED,
+            Set.of("data_submission"), BUILT,
             "stored submissions by id and in batches, as StoredSubmission"),
         new SqlSeam("org/nmcpye/datarun/submission/normalized/jdbc/PlacementJdbcResolver.java",
-            Set.of("assignment", "team", "org_unit", "activity"), PLANNED,
+            Set.of("assignment", "team", "org_unit", "activity"), BUILT,
             "one placement resolver: a submission's assignment, team, org unit and activity uids turned into ids"),
         new SqlSeam("org/nmcpye/datarun/jpa/datasubmission/revision/", Set.of("data_submission"), BUILT,
             "the journal copies the stored row it records"));
@@ -529,6 +529,21 @@ class NewCodeSeamsTest {
             .isNotEmpty().allSatisfy(line -> assertThat(line).contains("DataSubmissionUploadV1Dto"));
     }
 
+    /**
+     * The classification alone catches a back door: a class in the submission packages, or in the outbox, that reads
+     * the ETL's settings breaks rule (a) by its package, with no predicate written for it.
+     */
+    @Test
+    void theClassificationCatchesABackDoorByItsPackage() {
+        JavaClasses classes = new ClassFileImporter().importClasses(org.nmcpye.datarun.submission.LegacyBackDoor.class,
+            org.nmcpye.datarun.outbox.LegacyBackDoor.class, EtlProperties.class);
+
+        assertThat(details(newCodeDependsOnNoRetiringCode(ofKind(NEW_CODE)), classes))
+            .isNotEmpty().allSatisfy(line -> assertThat(line).contains("submission.LegacyBackDoor"));
+        assertThat(details(codeThatStaysDependsOnRetiringCodeOnlyAsListed(STAYS, LEFTOVERS), classes))
+            .isNotEmpty().allSatisfy(line -> assertThat(line).contains("outbox.LegacyBackDoor"));
+    }
+
     /** The scan's rules on small sources. */
     @Test
     void theSqlScanFlagsWhatItShould() {
@@ -555,7 +570,7 @@ class NewCodeSeamsTest {
             .as("the journal's own reads").isEmpty();
         assertThat(sqlFindings("org/nmcpye/datarun/submission/normalized/jdbc/PlacementJdbcResolver.java",
             "String v = \"SELECT a.id FROM assignment a JOIN team t ON t.id = a.team_id\";"))
-            .as("a planned seam's own reads").isEmpty();
+            .as("a seam's own reads").isEmpty();
         assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/publisher/Placement.java",
             "String v = \"SELECT a.id FROM assignment a WHERE a.uid = :assignmentUid\";"))
             .as("the same reads anywhere else").containsExactly("org/nmcpye/datarun/submission/feed/publisher/"

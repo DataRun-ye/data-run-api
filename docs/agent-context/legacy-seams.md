@@ -24,7 +24,7 @@ Package names are relative to `org.nmcpye.datarun`.
 | --- | --- |
 | [`submission.normalized`](../../src/main/java/org/nmcpye/datarun/submission/normalized/) | the submission normalizer: a stored submission and its form's definitions in, values by field id and row id out; pure (`NormalizedSubmissionPurityTest`) |
 | [`submission.normalized.jdbc`](../../src/main/java/org/nmcpye/datarun/submission/normalized/jdbc/FormDefinitionJdbcReader.java) | `FormDefinitionJdbcReader`: every version of a form with its data element and option set ids, in one statement |
-| [`submission.feed`](../../src/main/java/org/nmcpye/datarun/submission/feed/) | the feed's switch and reader role; `publisher` writes the form dictionary (the submission streams are on `feat/feed-v1`) |
+| [`submission.feed`](../../src/main/java/org/nmcpye/datarun/submission/feed/) | the feed's switch and reader role; `publisher` writes the form dictionary and the submission streams |
 | [`web.v2`](../../src/main/java/org/nmcpye/datarun/web/v2/) | v2's conventions (`api-v2.md`): problems, its security chain, `ApiCaller`, ids, paging, idempotent commands |
 | [`jpa.datasubmission.revision`](../../src/main/java/org/nmcpye/datarun/jpa/datasubmission/revision/) | the journal: `SubmissionRevisionWriter`, and `SubmissionRevisionReader` for conflict detection |
 | [`jpa.datasubmission.conflict`](../../src/main/java/org/nmcpye/datarun/jpa/datasubmission/conflict/) | conflict detection, called by `SubmissionUploads` for each upload item, which gives it plain values: the stored state, the phone copy with its row id tag, the uploader's user id, and a neutral refusal kind for the move rule |
@@ -45,7 +45,7 @@ Package names are relative to `org.nmcpye.datarun`.
 
 | Structure | Code | Seam for new code | Never touch |
 | --- | --- | --- | --- |
-| `outbox`, `outbox_processing` | [`outbox`](../../src/main/java/org/nmcpye/datarun/outbox/); its claim loop still lives in [`etl/orchestrator`](../../src/main/java/org/nmcpye/datarun/etl/orchestrator/) and [`etl/admin`](../../src/main/java/org/nmcpye/datarun/etl/admin/) (debt: move it to `outbox.processing` and rename it) | `outbox.processing` (`ChangeOutput`, on `feat/feed-v1`): a change as a submission id and version | the table, `OutboxDto`, the claim and processing services |
+| `outbox`, `outbox_processing` | [`outbox`](../../src/main/java/org/nmcpye/datarun/outbox/); its claim loop still lives in [`etl/orchestrator`](../../src/main/java/org/nmcpye/datarun/etl/orchestrator/) and [`etl/admin`](../../src/main/java/org/nmcpye/datarun/etl/admin/) (debt: move it to `outbox.processing` and rename it) | `outbox.processing`: `ChangeOutput` and `ChangeReference` (a change as a submission id and version), `DeferredWork` (an output's work behind the live changes), `ChangeBacklog` (the changes recorded and not yet processed) | the table, `OutboxDto`, the claim and processing services |
 
 The outbox is an edge integration artifact, and the core must not depend on it. The write path inserts every row,
 beside the revision it announces ([`DefaultDataSubmissionService.java:146`](../../src/main/java/org/nmcpye/datarun/jpa/datasubmission/service/DefaultDataSubmissionService.java#L146)):
@@ -117,13 +117,13 @@ Where today's seams serve new code poorly:
 | `ValueType` | any new code | the stored value-type vocabulary in the normalizer's definitions |
 | `CurrentUserDetails` | `web.v2.caller` | `ApiCaller` keeps the user id and authorities |
 | `DomainUserDetailsService` | `web.v2.config` | the v2 chain authenticates as v1 does |
-| `outbox.processing` | any new code | the outputs' seam: a change as a submission id and version |
-| SQL: `data_template`, `data_template_version`, `data_element`, `option_set` | `FormDefinitionJdbcReader` | the normalizer's form definitions |
+| `outbox.processing` | any new code | the outputs' seam: `ChangeOutput`, `ChangeReference`, `DeferredWork`, `ChangeBacklog` |
+| SQL: `data_template`, `data_template_version`, `data_element`, `option_set` | `FormDefinitionJdbcReader` | the normalizer's form definitions, and a form's and a version's ids by uid |
 | SQL: `data_submission` | the journal package | the journal copies the row it records |
-| SQL: `data_submission` | `submission.normalized.jdbc.StoredSubmissionJdbcReader`, **planned** | stored submissions by id and in batches |
-| SQL: `assignment`, `team`, `org_unit`, `activity` | `submission.normalized.jdbc.PlacementJdbcResolver`, **planned** | one placement resolver, turning placement uids into ids |
+| SQL: `data_submission` | `submission.normalized.jdbc.StoredSubmissionJdbcReader` | stored submissions by id and in batches |
+| SQL: `assignment`, `team`, `org_unit`, `activity` | `submission.normalized.jdbc.PlacementJdbcResolver` | one placement resolver, turning placement uids into ids |
 
-The two planned seams are being built for the feed (engineering, 2026-11-26).
+Engineering planned the last two (2026-11-26); the feed built them.
 
 ## Exceptions
 
@@ -139,12 +139,12 @@ of `etl`.
 
 ## Gaps
 
-Submission review (`docs/features/submission-review/spec.md`) needs these; none is built yet.
+Submission review (`docs/features/submission-review/spec.md`) needs these; the feed built parts of 1 and 4, the rest is not built.
 
 | # | Need | Systems of record | Seam to build | Today |
 | --- | --- | --- | --- | --- |
-| 1 | Search, view and history: submissions by filters and by id | `data_submission`, journal | `StoredSubmissionJdbcReader` (planned: by id and in batches); search by filters under the search guard still to add. It reads `journal.submission_revision` too, so `SubmissionWriteOwnershipTest`'s `NAMED_IN` ([`:124`](../../src/test/java/org/nmcpye/datarun/SubmissionWriteOwnershipTest.java#L124)) must name it when it is built; the feed branch does so on its rebase | `feat/feed-v1`'s `FeedWriter` and `Reconcile`, and the journal's `SubmissionRevisionReader`, each read `data_submission` on their own |
+| 1 | Search, view and history: submissions by filters and by id | `data_submission`, journal | `StoredSubmissionJdbcReader` (built: by id and in batches); search by filters under the search guard still to add. It reads `journal.submission_revision` too, and `SubmissionWriteOwnershipTest`'s `NAMED_IN` ([`:124`](../../src/test/java/org/nmcpye/datarun/SubmissionWriteOwnershipTest.java#L124)) names it | the journal's `SubmissionRevisionReader` reads `data_submission` on its own |
 | 2 | Values typed for a form named by id; edits written back | form definitions | a read by form id, and the write direction (field id and row id to the stored place), in `submission.normalized` | uid-keyed reader; no write direction |
 | 3 | Edits, moves, splits, deletes and restores | `data_submission`, journal | write-path commands for new code: `SubmissionCommand` variants keyed by submission id, with domain types and the journal's reason and detail, run in v2's idempotent transaction, answering a result of their own | every variant carries a client contract or a uid |
-| 4 | A move's destination rules; scope by activity, team, area | configuration, access scope | `PlacementJdbcResolver` (planned: uids to ids); an assignment's forms and deleted state, and org unit ancestry, still to add. Review's own grants are new code | entities and v1 DTOs keyed by uid; the snapshot in uids; `feat/feed-v1`'s private `Placement` |
+| 4 | A move's destination rules; scope by activity, team, area | configuration, access scope | `PlacementJdbcResolver` (built: uids to ids); an assignment's forms and deleted state, and org unit ancestry, still to add. Review's own grants are new code | entities and v1 DTOs keyed by uid; the snapshot in uids |
 | 5 | View's entries; history's actor names | `reference_entry`, `app_user` | small readers by id | none |
