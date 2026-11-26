@@ -39,6 +39,12 @@ public class FeedPublisherProperties {
     private int reconcileScanSize = 2000;
 
     /**
+     * Republish marks an admin's republication writes in one transaction: each such transaction holds the feed's lock
+     * only briefly, so live changes go on between them.
+     */
+    private int markBatchSize = 5000;
+
+    /**
      * How long one reconcile batch may go on reading while it finds nothing to publish: it reads at least one page of
      * {@code reconcile-scan-size}, then stops once this time is spent, and the next batch goes on from there. The
      * runtime that runs the batches refuses to start unless it is shorter than its poll

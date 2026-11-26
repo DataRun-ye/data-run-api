@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -171,49 +173,116 @@ class RepublicationIT {
     }
 
     /**
-     * An admin's republication of a form (feed build step F4): every record of the form is marked, and written again at
-     * the version the feed holds with new positions, behind the live backlog; a record whose held version is newer
-     * than its head is skipped, and its mark goes.
+     * An admin's republication of a form (feed build step F4): every record of the form is marked, read a page of the
+     * records the feed holds at a time (three in these tests) and marked a page at a time, then written again at the
+     * version the feed holds with new positions, behind the live backlog. A record of another form among them is not
+     * marked, and a record whose held version is newer than its head is skipped, its mark gone.
      */
     @Test
     void anAdminsRepublicationOfAFormWritesItsRecordsAgainAndSkipsANewerHeldVersion() {
-        Ids first = fixture.create(document("first", 1, row("r1", "a")));
-        Ids newer = fixture.create(document("newer", 2));
+        List<Ids> ofForm = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            ofForm.add(fixture.create(document("form " + i, i, row("r1", "a"))));
+        }
         drain();
+        List<String> created = ofForm.stream().map(Ids::id).toList();
+        Ids otherForm = ofForm.remove(2);
+        fixture.execute("UPDATE feed.submission SET form_id = 'fp-other-form' WHERE id = :id",
+            Map.of("id", otherForm.id()));
+        Ids newer = ofForm.get(ofForm.size() - 1);
         fixture.execute("UPDATE feed.submission SET version = version + 1 WHERE id = :id", Map.of("id", newer.id()));
-        Map<String, Object> firstBefore = fixture.record(first);
-        Map<String, Object> newerBefore = fixture.record(newer);
+        Map<String, Map<String, Object>> before = new HashMap<>();
+        ofForm.forEach(submission -> before.put(submission.id(), fixture.record(submission)));
+        Map<String, Object> otherBefore = fixture.record(otherForm);
 
-        assertThat(publisher.markForRepublication(FORM_ID, null)).isEqualTo(2);
-        assertThat(publisher.republishMarksWaiting()).isEqualTo(2);
+        assertThat(publisher.markForRepublication(FORM_ID, null)).as("the form's five").isEqualTo(5);
+        assertThat(mark(otherForm.id())).as("another form's record").isEmpty();
+        assertThat(fixture.count("SELECT count(DISTINCT xmin::text) FROM feed_ops.republish", Map.of()))
+            .as("pages of three: the form's two of the first, then three").isEqualTo(2);
         while (publisher.runBatch()) {
             // the marks are written
         }
 
-        Map<String, Object> firstAfter = fixture.record(first);
-        assertThat(firstAfter).containsEntry("version", firstBefore.get("version"))
-            .containsEntry("field_values", firstBefore.get("field_values"));
-        assertThat((Long) firstAfter.get("position")).isGreaterThan((Long) firstBefore.get("position"));
-        assertThat(fixture.record(newer)).as("a newer held version is skipped").isEqualTo(newerBefore);
+        for (Ids submission : ofForm) {
+            Map<String, Object> after = fixture.record(submission);
+            if (submission == newer) {
+                assertThat(after).as("a newer held version is skipped").isEqualTo(before.get(newer.id()));
+                continue;
+            }
+            assertThat(after).as(submission.id()).containsEntry("version", before.get(submission.id()).get("version"))
+                .containsEntry("field_values", before.get(submission.id()).get("field_values"));
+            assertThat((Long) after.get("position")).isGreaterThan((Long) before.get(submission.id()).get("position"));
+        }
+        assertThat(fixture.record(otherForm)).as("not marked, not written").isEqualTo(otherBefore);
         assertThat(publisher.republishMarksWaiting()).isZero();
-        assertThat(fixture.count("SELECT count(*) FROM outbox WHERE submission_id IN (:ids)",
-            Map.of("ids", List.of(first.id(), newer.id())))).as("no outbox row written").isEqualTo(2);
+        assertThat(fixture.count("SELECT count(*) FROM outbox WHERE submission_id IN (:ids)", Map.of("ids", created)))
+            .as("no outbox row written").isEqualTo(6);
     }
 
-    /** Listed submissions: only those are marked, and only records the feed holds. */
+    /**
+     * An admin's republication of every form marks each record the feed holds, and only those, three at a time in
+     * these tests: each three in a short transaction of their own under the feed's lock, so live changes go on
+     * between them, never one transaction for the whole scope. The marks are then written as before.
+     */
+    @Test
+    void anAdminsRepublicationOfEveryFormMarksTheHeldRecordsAFewAtATimeEachInATransactionOfTheirOwn() {
+        List<Ids> held = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            held.add(fixture.create(document("held " + i, i)));
+        }
+        drain();
+        Ids lacked = fixture.create(document("lacked", 1));
+        fixture.execute("UPDATE outbox SET status = 'success' WHERE status = 'pending'", Map.of());
+        Map<String, Long> positions = new HashMap<>();
+        held.forEach(submission -> positions.put(submission.id(), (Long) fixture.record(submission).get("position")));
+
+        assertThat(publisher.markForRepublication(null, null)).isEqualTo(8);
+
+        assertThat(publisher.republishMarksWaiting()).isEqualTo(8);
+        assertThat(mark(lacked.id())).as("a submission the feed lacks is not marked").isEmpty();
+        assertThat(fixture.count("SELECT count(DISTINCT xmin::text) FROM feed_ops.republish", Map.of()))
+            .as("the transactions that wrote the marks: three, three and two").isEqualTo(3);
+        while (publisher.runBatch()) {
+            // the marks are written
+        }
+        assertThat(publisher.republishMarksWaiting()).isZero();
+        for (Ids submission : held) {
+            assertThat((Long) fixture.record(submission).get("position")).as("written again: %s", submission.id())
+                .isGreaterThan(positions.get(submission.id()));
+        }
+        assertThat(fixture.record(lacked)).isEmpty();
+    }
+
+    /**
+     * Listed submissions: only those are marked, and only records the feed holds, a batch of the list at a time (three
+     * in these tests).
+     */
     @Test
     void anAdminsRepublicationOfListedSubmissionsMarksOnlyTheRecordsTheFeedHolds() {
-        Ids listed = fixture.create(document("listed", 1));
+        List<Ids> listed = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            listed.add(fixture.create(document("listed " + i, i)));
+        }
         Ids other = fixture.create(document("other", 1));
         drain();
+        Map<String, Long> positions = new HashMap<>();
+        listed.forEach(submission -> positions.put(submission.id(), (Long) fixture.record(submission).get("position")));
         Map<String, Object> otherBefore = fixture.record(other);
+        List<String> ids = new ArrayList<>(listed.stream().map(Ids::id).toList());
+        ids.add("01FDSUBNOTHELD0000000000");
 
-        assertThat(publisher.markForRepublication(null, List.of(listed.id(), "01FDSUBNOTHELD0000000000"))).isEqualTo(1);
+        assertThat(publisher.markForRepublication(null, ids)).as("the four the feed holds").isEqualTo(4);
+        assertThat(fixture.count("SELECT count(DISTINCT xmin::text) FROM feed_ops.republish", Map.of()))
+            .as("batches of three: three, then one and the submission the feed lacks").isEqualTo(2);
         while (publisher.runBatch()) {
-            // the mark is written
+            // the marks are written
         }
 
-        assertThat(mark(listed.id())).isEmpty();
+        for (Ids submission : listed) {
+            assertThat(mark(submission.id())).isEmpty();
+            assertThat((Long) fixture.record(submission).get("position")).as("written again: %s", submission.id())
+                .isGreaterThan(positions.get(submission.id()));
+        }
         assertThat(fixture.record(other)).as("not listed").isEqualTo(otherBefore);
     }
 }

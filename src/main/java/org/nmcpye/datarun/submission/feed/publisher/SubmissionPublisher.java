@@ -345,17 +345,64 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
 
     /**
      * Marks a scope's records for republication (an admin's, feed build step F4): the listed submissions when some
-     * are listed, else one form's, else every record the feed holds. The marks are written in batches behind the live
-     * backlog, each at the version the feed holds with new positions; a newer held version is skipped. How many marks
-     * it added.
+     * are listed, else one form's, else every record the feed holds. It goes {@code datarun.feed.mark-batch-size} at a
+     * time, each batch's marks in a short transaction of its own under the feed's lock, so live changes go on between
+     * them: listed submissions a batch of the list at a time, in the list's order; a form or every form a page of the
+     * records the feed holds at a time, in id order, read outside the lock, marking the page's records of the scope. It
+     * returns once every batch is marked; a client that gives up does not stop it. Cut short, by a failure or a
+     * restart, it keeps the batches it marked, and a rerun marks the
+     * scope again from its first record, so a record may be written again but none is missed. The marks are written
+     * in batches behind the live backlog, each at the version the feed holds with new positions; a newer held version
+     * is skipped. How many marks it added.
      *
      * @throws IllegalStateException when the feed is off
      */
     int markForRepublication(String formId, List<String> submissionIds) {
         requireOn();
-        int marked = inFeedTransaction(() -> republishMarks.mark(jdbc, formId, submissionIds));
-        log.info("Republication marked {} records ({})", marked, submissionIds != null && !submissionIds.isEmpty()
-            ? submissionIds.size() + " submissions listed" : formId != null ? "form " + formId : "every form");
+        int size = Math.max(1, properties.getMarkBatchSize());
+        boolean listed = submissionIds != null && !submissionIds.isEmpty();
+        String scope = listed ? submissionIds.size() + " submissions listed"
+            : formId != null ? "form " + formId : "every form";
+        log.info("Republication marking starts ({}), {} at a time", scope, size);
+        int marked = 0;
+        String through = null;
+        try {
+            if (listed) {
+                for (int from = 0; from < submissionIds.size(); from += size) {
+                    List<String> batch = submissionIds.subList(from, Math.min(submissionIds.size(), from + size));
+                    marked += inFeedTransaction(() -> republishMarks.mark(jdbc, batch));
+                    through = batch.get(batch.size() - 1);
+                }
+            } else {
+                String after = "";
+                while (true) {
+                    String from = after;
+                    List<RepublishMarks.Held> page = reading.execute(status -> republishMarks.heldAfter(jdbc, from,
+                        size));
+                    if (page == null || page.isEmpty()) {
+                        break;
+                    }
+                    List<String> ofScope = page.stream()
+                        .filter(held -> formId == null || formId.equals(held.formId()))
+                        .map(RepublishMarks.Held::submissionId)
+                        .toList();
+                    if (!ofScope.isEmpty()) {
+                        marked += inFeedTransaction(() -> republishMarks.mark(jdbc, ofScope));
+                    }
+                    after = page.get(page.size() - 1).submissionId();
+                    through = after;
+                    if (page.size() < size) {
+                        break;
+                    }
+                }
+            }
+        } catch (RuntimeException failure) {
+            log.warn("Republication marking ({}) stopped after {} marks, through submission {} ({}): the marks stay, "
+                + "and a rerun marks the scope again from its first record", scope, marked, through,
+                failure.getClass().getSimpleName());
+            throw failure;
+        }
+        log.info("Republication marked {} records ({})", marked, scope);
         return marked;
     }
 

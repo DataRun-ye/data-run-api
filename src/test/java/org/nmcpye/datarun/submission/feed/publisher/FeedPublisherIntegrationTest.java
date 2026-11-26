@@ -12,8 +12,8 @@ import java.lang.annotation.Target;
 /**
  * The application context the publisher's integration tests share: the switch on, a pool of six connections (writers,
  * publishers and readers run at once), a row timeout of ten seconds with a feed part limit of three, three attempts
- * before an outbox row or a pending change is dead, the feed's retries due at once, small batches, the split seam's
- * stub, and a dictionary that is not checked again during a test.
+ * before an outbox row or a pending change is dead, the feed's retries due at once, small batches (three republish
+ * marks a transaction), the split seam's stub, and a dictionary that is not checked again during a test.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -29,6 +29,7 @@ import java.lang.annotation.Target;
     "datarun.feed.retry-delay=0s",
     "datarun.feed.max-retry-delay=0s",
     "datarun.feed.batch-size=5",
+    "datarun.feed.mark-batch-size=3",
     "datarun.feed.reconcile-scan-size=7",
     "datarun.feed.dictionary-check-delay=PT1H"
 })
