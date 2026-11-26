@@ -7,7 +7,7 @@ or deployment authority.
 
 ## Now
 
-- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.6 and app
+- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.7 and app
   6.1.2, with the household lists loaded in production (see
   `reference-boundary.md`). A campaign-wide go-live rule holds every upload
   until operations set the real start; operations own the campaign's dates,
@@ -21,7 +21,9 @@ or deployment authority.
   - privacy and logging hardening in 6.5.5: request errors are log lines and `error_event` is retired; the metrics
     endpoint and the single-submission read are admin-only; admin generic submission lists are bounded;
   - the revision journal in 6.5.6: every change to a submission is recorded in `journal.submission_revision`, from a
-    baseline of every submission, with each change tied to one outbox event.
+    baseline of every submission, with each change tied to one outbox event;
+  - the submission lock in 6.5.7: every upload item and the admin delete lock the submission first, waiting at most
+    5 s. Conflict detection, the feed's schema and dictionary, and the v2 foundation shipped switched off.
 
   Next, sequenced by engineering, with no delivery deadline:
   - a published feed of current state for downstream analytics, in its own schema, which replaces tall, events and

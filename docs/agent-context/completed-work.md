@@ -139,6 +139,13 @@ deployment authority.
   - every write path records its revision in the same transaction as the submission and its outbox row; outbox rows
     carry the version, and delete events are typed DELETE;
   - a gap repair records changes made while an older image ran; integrity check lines 11a–h measure the journal.
+- `v6.5.7` / `844d91b9`: deployed 2026-11-26 (GitHub release `v6.5.7`). The submission lock, and switched-off
+  foundations:
+  - every upload item and the admin delete lock the submission first, waiting at most 5 s
+    (`datarun.submissions.lock-timeout`); past it the item fails and the phone retries, and the delete answers 409;
+  - tall counts a repeat row under the submission that now holds it;
+  - switched off: conflict detection (`submission_review.conflict`, review commands in the journal's check), the feed's
+    schemas `feed` and `feed_ops` with its dictionary job, and the v2 foundation (`api.idempotency_key`).
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.
