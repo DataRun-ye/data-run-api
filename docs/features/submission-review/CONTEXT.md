@@ -210,7 +210,8 @@ revision.
 _Avoid_: office change, room change
 
 **Conflict** (تعارض):
-A changed phone copy that arrived after a server-side change the phone had not seen. It is kept aside, the phone is
+A changed phone copy that arrived after a server-side change the phone had not seen, or for a submission that is
+deleted now. It is kept aside, the phone is
 answered `updated`, and the submission shows `hasOpenConflict`; there is one open conflict per submission and
 uploader, and it always holds that uploader's newest copy. API: `conflicts`; states `OPEN`, `KEPT`, `ACCEPTED`; `cause` `SERVER_SIDE_CHANGE` or `DETECTION_ERROR`.
 _Avoid_: held, hold, held re-send, and `conflict` as the bare code of an HTTP 409

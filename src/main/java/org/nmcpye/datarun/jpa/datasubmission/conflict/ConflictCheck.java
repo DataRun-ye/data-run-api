@@ -8,7 +8,8 @@ package org.nmcpye.datarun.jpa.datasubmission.conflict;
  *   <li>a copy equal to the current state changes nothing;</li>
  *   <li>after a server-side {@code MOVE} later than the base version, a copy the upload checks refuse for access
  *       ({@link AccessRefusal}) is kept aside as a conflict ({@link #keepsAsideOnRefusal});</li>
- *   <li>a server-side change after the base version keeps the copy aside as a conflict;</li>
+ *   <li>a server-side change after the base version keeps the copy aside as a conflict, and so does any changed copy
+ *       of a submission that is currently deleted, whatever the base;</li>
  *   <li>otherwise the upload applies as today.</li>
  * </ol>
  * While the uploader has an open conflict on the submission, it comes first: the same copy again only counts, and any
@@ -58,9 +59,15 @@ public final class ConflictCheck {
      * @param serverSideChange a server-side change came after the base
      * @param moved            a server-side {@code MOVE} came after the base
      * @param open             the uploader's open conflict, as the copy finds it
+     * @param deletedNow       the submission is deleted now
      */
     record Analysis(boolean ownBase, long base, boolean unchangedResend, boolean equalsCurrent,
-                    boolean serverSideChange, boolean moved, OpenCopy open) {
+                    boolean serverSideChange, boolean moved, OpenCopy open, boolean deletedNow) {
+
+        /** What keeps a changed copy aside: a server-side change after the base, or the submission deleted now. */
+        boolean keepsAside() {
+            return serverSideChange || deletedNow;
+        }
     }
 
     private final ConflictDetection detection;
@@ -122,7 +129,7 @@ public final class ConflictCheck {
         if (!analysis.ownBase() && (analysis.unchangedResend() || analysis.equalsCurrent())) {
             return Outcome.NOTHING;
         }
-        return analysis.serverSideChange() ? Outcome.KEEP_ASIDE : Outcome.APPLY;
+        return analysis.keepsAside() ? Outcome.KEEP_ASIDE : Outcome.APPLY;
     }
 
     /**
@@ -136,8 +143,8 @@ public final class ConflictCheck {
         if (analysis == null) {
             detection.keepAside(context, ConflictCause.DETECTION_ERROR, null);
         } else {
-            // Without a server-side change only the open conflict keeps the copy aside, and its cause stays.
-            detection.keepAside(context, analysis.serverSideChange() ? ConflictCause.SERVER_SIDE_CHANGE : null,
+            // Otherwise only the open conflict keeps the copy aside, and its cause stays.
+            detection.keepAside(context, analysis.keepsAside() ? ConflictCause.SERVER_SIDE_CHANGE : null,
                 analysis.base());
         }
     }

@@ -109,6 +109,28 @@ class ConflictDecisionTest {
             .afterChecks()).isEqualTo(ConflictCheck.Outcome.KEEP_ASIDE);
     }
 
+    /**
+     * Under 6.5.6 a re-send onto a deleted submission wrote an UPLOAD revision onto it: a base after the delete. A
+     * changed copy of a submission deleted now is kept aside whatever the base; an unchanged one changes nothing.
+     */
+    @Test
+    void aChangedCopyOfADeletedSubmissionIsKeptAsideWhateverTheBase() {
+        List<Revision> uploadedOntoTheDeleted = List.of(upload(0, UPLOADER), adminDelete(1), upload(2, UPLOADER));
+        Map<Long, ComparedState> states = Map.of(2L, deletedState("re-sent"));
+
+        ConflictCheck changed = decide(copy("changed"), stored("re-sent", true, false), uploadedOntoTheDeleted, states);
+        assertThat(changed.answeredBeforeChecks()).isFalse();
+        assertThat(changed.afterChecks()).isEqualTo(ConflictCheck.Outcome.KEEP_ASIDE);
+
+        PhoneCopy unchanged = new PhoneCopy(UploadRoute.VERSIONED, item("re-sent", "version1"),
+            deletedState("re-sent"), false);
+        assertThat(decide(unchanged, stored("re-sent", true, false), uploadedOntoTheDeleted, states)
+            .answeredBeforeChecks()).as("an unchanged copy").isTrue();
+        assertThat(decide(copy("changed"), stored("second", false, false),
+            List.of(upload(0, UPLOADER), upload(1, UPLOADER)), Map.of(1L, state("second"))).afterChecks())
+            .as("a live submission").isEqualTo(ConflictCheck.Outcome.APPLY);
+    }
+
     // ---------------------------------------------------------------- the move rule and an open conflict
 
     @Test
@@ -215,6 +237,14 @@ class ConflictDecisionTest {
 
     private static Revision edit(long version) {
         return new Revision(version, "UPDATE", "EDIT", "admin1", null, false);
+    }
+
+    private static Revision adminDelete(long version) {
+        return new Revision(version, "DELETE", "ADMIN_DELETE", "admin1", null, true);
+    }
+
+    private static ComparedState deletedState(String name) {
+        return new ComparedState(document(name), true, "assignment1", null);
     }
 
     private static Revision move(long version) {

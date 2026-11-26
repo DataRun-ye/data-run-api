@@ -515,6 +515,69 @@ class ConflictDetectionIT extends A2GoldenSupport {
         assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
     }
 
+    // ---------------------------------------------------------------- deleted submissions
+
+    /**
+     * Under 6.5.6 a re-send onto a deleted submission wrote an UPLOAD revision onto it, which gives the phone a base
+     * that hides the delete. A changed copy of a submission deleted now is kept aside whatever the base.
+     */
+    @Test
+    void aChangedCopyOfADeletedSubmissionIsKeptAsideWhateverTheBase() throws Exception {
+        String uid = uid("cdDelBase");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        assertThat(adminDelete(uid).getStatus()).isEqualTo(204);
+        seed.uploadOntoDeleted(uid, FIELD_1, "UPLOAD", "re-sent onto the deleted record");
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed after")))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 DELETE ADMIN_DELETE", "2 UPDATE UPLOAD");
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("state", "OPEN").containsEntry("cause", "SERVER_SIDE_CHANGE")
+            .containsEntry("base_version", 2L));
+    }
+
+    /**
+     * An unchanged copy, equal to the uploader's base version's state, still changes nothing after the submission was
+     * deleted, however often it is sent.
+     */
+    @Test
+    void unchangedReSendsOfADeletedSubmissionWriteNothing() throws Exception {
+        String uid = uid("cdDelSame");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        assertThat(adminDelete(uid).getStatus()).isEqualTo(204);
+
+        for (int i = 0; i < 3; i++) {
+            assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(updated(uid));
+        }
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 DELETE ADMIN_DELETE");
+        assertThat(conflicts(uid)).isEmpty();
+    }
+
+    /**
+     * Apps 5.2 and 5.3 after a re-send 6.5.6 wrote onto the deleted submission: the same copy again, rows without ids
+     * and deleted false as phones send it, differs from that deleted base, so it no longer writes a revision with new
+     * row ids each time. It is kept aside once, then only counted.
+     */
+    @Test
+    void g0ReSendsOfADeletedSubmissionAreKeptAsideOnceThenCounted() throws Exception {
+        String uid = uid("cdDelG0");
+        assertThat(answer(upload(G0, FIELD_1, formA(G0, uid, "first")))).isEqualTo(created(uid));
+        assertThat(adminDelete(uid).getStatus()).isEqualTo(204);
+        seed.uploadOntoDeleted(uid, FIELD_1, "LEGACY_UPLOAD", "re-sent onto the deleted record");
+
+        for (int i = 0; i < 3; i++) {
+            assertThat(answer(upload(G0, FIELD_1, formA(G0, uid, "re-sent onto the deleted record"))))
+                .isEqualTo(updated(uid));
+        }
+
+        assertThat(revisions(uid))
+            .containsExactly("0 CREATE LEGACY_UPLOAD", "1 DELETE ADMIN_DELETE", "2 UPDATE LEGACY_UPLOAD");
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("state", "OPEN").containsEntry("rows_lack_ids", true).containsEntry("resend_count", 2)
+            .containsEntry("base_version", 2L));
+    }
+
     // ---------------------------------------------------------------- deleted before the journal
 
     /**
@@ -762,9 +825,15 @@ class ConflictDetectionIT extends A2GoldenSupport {
             pool.getUsername(), pool.getPassword(), database, null, 100, 2, "s2", "a2rh%"))) {
             report = rehearsal.run();
 
-            assertThat(rehearsal.unchanged.sorted()).as("nine copies, two shapes each").containsOnly(
-                Map.entry("apps 6.0 and later (rows with ids), own base, changes nothing, before the checks", 9L),
-                Map.entry("apps 5.2 and 5.3 (rows without ids), own base, changes nothing, before the checks", 9L));
+            assertThat(rehearsal.unchanged.sorted()).as("nine copies, two shapes each, one deleted").containsOnly(
+                Map.entry("apps 6.0 and later (rows with ids), live submission, own base, changes nothing, "
+                    + "before the checks", 8L),
+                Map.entry("apps 6.0 and later (rows with ids), deleted submission, own base, changes nothing, "
+                    + "before the checks", 1L),
+                Map.entry("apps 5.2 and 5.3 (rows without ids), live submission, own base, changes nothing, "
+                    + "before the checks", 8L),
+                Map.entry("apps 5.2 and 5.3 (rows without ids), deleted submission, own base, changes nothing, "
+                    + "before the checks", 1L));
             assertThat(rehearsal.unchangedConflicts()).isZero();
             assertThat(rehearsal.unchangedFailures()).isZero();
             assertThat(rehearsal.holders.sorted()).containsOnly(Map.entry("creator", 1L), Map.entry("upload", 8L));

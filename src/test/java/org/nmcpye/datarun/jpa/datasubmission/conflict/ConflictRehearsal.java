@@ -62,9 +62,9 @@ import static org.mockito.Mockito.when;
  * <p><b>Whose copy.</b> A submission's copy is held by whoever last uploaded it: the newest {@code UPLOAD} or
  * {@code LEGACY_UPLOAD} revision's actor, or a {@code HELD_RELEASE}'s uploader, holding that revision's state. For a
  * submission no upload has changed since the journal began, it is the row's last modifier, holding the first
- * revision's state. Every copy is sent as phones send it, {@code deleted} false. A holder without a base of their own
- * (a last modifier who is not the creator, or a creator whose baseline is deleted) is counted apart: after a
- * server-side change, a deleted baseline included, their copy is kept aside by design. Each copy is re-sent in two shapes: as stored
+ * revision's state. Every copy is sent as phones send it, {@code deleted} false. Copies to deleted submissions are
+ * counted apart: there a copy that differs from the holder's base is kept aside by design, once per uploader. Live
+ * submissions re-sent unchanged give 0 conflicts for every holder, with or without a base of their own. Each copy is re-sent in two shapes: as stored
  * (apps 6.0 and later, row ids included) and with every row's structure keys removed (apps 5.2 and 5.3). Documents are
  * read as the upload routes read a request, decimals as binary doubles.</p>
  *
@@ -139,6 +139,8 @@ public final class ConflictRehearsal implements AutoCloseable {
     private static final String PHONE_CHANGE = "conflict_rehearsal_phone_change";
     private static final String NO_BASE = "no base of their own";
     private static final String OWN_BASE = "own base";
+    private static final String LIVE = "live submission";
+    private static final String DELETED = "deleted submission";
     private static final String SERVER_CHANGE = "conflict_rehearsal_server_change";
     private static final int PAYLOAD_BATCH = 200;
 
@@ -237,16 +239,16 @@ public final class ConflictRehearsal implements AutoCloseable {
             + seconds(started) + " s");
         holders.sorted().forEach((key, count) -> line("  copy holder " + key + ": " + count));
         unchanged.sorted().forEach((key, count) -> line("  " + key + ": " + count));
-        line("  expected: kept aside 0 for a holder with a base of their own, failed 0; met: "
+        line("  expected: kept aside 0 for live submissions, whoever holds the copy, failed 0; met: "
             + (unchangedConflicts() == 0 && unchangedFailures() == 0 ? "yes" : "no"));
     }
 
     /**
-     * Conflicts the re-send pass would have opened for a holder with a base of their own: kept aside, for a server-side
-     * change or a detection error. A holder without one is kept aside by design after a server-side change.
+     * Conflicts the re-send pass would have opened for a live submission, whoever holds the copy: kept aside, for a
+     * server-side change or a detection error. Copies to deleted submissions are counted apart.
      */
     public long unchangedConflicts() {
-        return unchanged.counts.keySet().stream().filter(key -> key.contains("kept aside") && key.contains(OWN_BASE))
+        return unchanged.counts.keySet().stream().filter(key -> key.contains("kept aside") && key.contains(LIVE))
             .mapToLong(unchanged::get).sum();
     }
 
@@ -275,10 +277,11 @@ public final class ConflictRehearsal implements AutoCloseable {
         if (onlyStatusDiffers(head.get().document(), asStored)) {
             status.add("heads whose re-sent copy differs from the stored document only in _status");
         }
+        String submission = head.get().deleted() ? DELETED : LIVE;
         String base = holder.get().ownBase(state.get()) ? OWN_BASE : NO_BASE;
         for (Shape shape : Shape.values()) {
             JsonNode document = shape.of(parse(asStored));
-            unchanged.add(shape.label + ", " + base + ", "
+            unchanged.add(shape.label + ", " + submission + ", " + base + ", "
                 + outcome(head.get(), holder.get(), state.get(), document, null));
         }
     }

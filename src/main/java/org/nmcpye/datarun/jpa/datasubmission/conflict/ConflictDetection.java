@@ -37,6 +37,10 @@ import static org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictComparison.
  * {@code DELETE}, {@code RESTORE}, an accept of another uploader's copy, {@code ADMIN_DELETE}, and a baseline of the
  * submission deleted, which counts for every uploader, also as the submission's first revision.</p>
  *
+ * <p><b>A changed copy of a submission that is deleted now</b> is kept aside, whatever the base: under 6.5.6 a re-send
+ * onto a deleted submission wrote an {@code UPLOAD} revision onto it, a base that hides the delete. An unchanged copy
+ * still changes nothing, and an open conflict still comes first.</p>
+ *
  * <p><b>An open conflict comes first:</b> while the uploader has one on the submission, it always holds their newest
  * copy. The same copy again only counts; any other copy, one equal to the base or to the current state included,
  * replaces it. So an uploader with an open conflict never writes the submission directly, and an accept never applies
@@ -164,8 +168,8 @@ public class ConflictDetection {
             .orElse(false);
         boolean equalsBase = base != null && sameState(copy.canonical(), stateAt.apply(base));
         boolean equalsCurrent = sameState(copy.canonical(), context.stored().compared());
-        return new ConflictCheck.Analysis(
-            base != null, after, equalsBase || equalsLastDecided, equalsCurrent, serverSideChange, moved, openCopy);
+        return new ConflictCheck.Analysis(base != null, after, equalsBase || equalsLastDecided, equalsCurrent,
+            serverSideChange, moved, openCopy, context.stored().deleted());
     }
 
     /** The uploader's own revisions: each leaves the state equal to what they last sent. */

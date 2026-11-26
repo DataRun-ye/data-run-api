@@ -267,9 +267,10 @@ placement and the feed carries it: gate A.
 **Phones holding the original** (engineering, 2026-11-25). These rules apply only to an uploader with a base version
 of their own (§7); everyone else's refusals stay as today.
 
-1. An unchanged re-send, or a copy equal to the current state, changes nothing, opens no conflict and is answered
-   `updated`, even where the upload checks would refuse it, since nothing is written. Repeated re-sends after a move
-   therefore never reopen a kept conflict.
+1. While the uploader has an open conflict, its handling comes first (§7). Otherwise an unchanged re-send, or a copy
+   equal to the current state, changes nothing, opens no conflict and is answered `updated`, even where the upload
+   checks would refuse it, since nothing is written. Repeated re-sends after a move therefore never reopen a kept
+   conflict.
 2. Once a `MOVE` revision exists after the uploader's base version, a changed copy that fails authorization is kept
    aside as a conflict (cause `SERVER_SIDE_CHANGE`) and answered `updated`: E4124 (the stored assignment is outside
    the uploader's scope, or the phone moves the submission itself), or E4114 and E4122 (the copy's own assignment was
@@ -369,7 +370,7 @@ I5 refuses the opposite order, and refuses to restore the new submission while i
 | # | Invariant | Test |
 | --- | --- | --- |
 | I1 | One writer: every changed submission gets exactly one revision and one outbox row, in one transaction, both of a split's submissions included | Failure injection after each insert of a split leaves nothing; ArchUnit and the SQL tripwire |
-| I2 | No upload item of an uploader with a base version of their own fails because of a server-side change. Unchanged re-sends and copies equal to the current state change nothing and open nothing, checked first; changed copies, and changed copies refused after a server-side move, are kept aside. Other uploaders are refused exactly as today | Characterization goldens for each installed phone contract after edit, move, split, delete and restore, copies without row ids included: never a refusal or an unexpected failure. An unchanged re-send after a move, repeated, opens no conflict; a kept conflict stays kept under repeated unchanged re-sends; another user's copy of a submission older than the journal is refused as today and never enters the queue |
+| I2 | No upload item of an uploader with a base version of their own fails because of a server-side change. An open conflict of theirs is handled first: the same copy only counts, any other replaces its copy. Otherwise unchanged re-sends and copies equal to the current state change nothing and open nothing, checked first; changed copies, changed copies refused after a server-side move, and any changed copy of a deleted submission are kept aside. Other uploaders are refused exactly as today | Characterization goldens for each installed phone contract after edit, move, split, delete and restore, copies without row ids included: never a refusal or an unexpected failure. An unchanged re-send after a move, repeated, opens no conflict; a kept conflict stays kept under repeated unchanged re-sends; another user's copy of a submission older than the journal is refused as today and never enters the queue |
 | I3 | A move changes placement only, to an assignment of the same activity that carries the form; accept never changes placement | The stored document and row ids compared byte for byte, before and after; refusal tests |
 | I4 | Conservation: a split neither loses nor duplicates a row; the new submission holds exactly the named top-level values; unmapped top-level values stay in the source | On a clone, split a random half of every multi-row submission with random top-level choices, then compare rows and top-level totals with the request, through the submission normalizer |
 | I5 | A row id is live in at most one submission of a lineage, splits of splits included; `:restore`, `restoreRow` and accept refuse to break it | Lineage checks after every step of the randomized sequences |
@@ -433,6 +434,11 @@ they never uploaded the submission, and it is older than the journal or someone 
 **Reference refusals come first** (engineering, 2026-11-25): before a copy is kept aside, the upload's Reference checks
 run against the copy's own assignment, and their refusals stay refusals, as today: E4118 (an entry twice in a field)
 and E4119 (an entry of another org unit). A copy kept aside creates no entries until it is accepted.
+
+**A changed copy of a deleted submission** is kept aside whatever the base version (engineering, 2026-11-26): under
+6.5.6 a re-send onto an already deleted submission wrote an `UPLOAD` revision onto it, which gives the phone a base
+that hides the delete. An unchanged copy still changes nothing, and an open conflict still comes first. Phones send
+`deleted` false, so a copy differs from a deleted base's state and is kept aside, once per uploader, then counted.
 
 **The comparison is structural** (engineering, 2026-11-25): two documents without row metadata, together with their
 deleted flag, assignment and status. A copy is unchanged only if applying it would write nothing the client owns
@@ -621,7 +627,7 @@ There is no delivery deadline, and no search-only release: searching is of no us
 | --- | --- | --- |
 | 0 | The revision journal in production (6.5.6); the v2 foundation on `develop` | — |
 | 1 | The submission normalizer (reading by row id and field id, typed values: on `develop`) and the write direction back to stored places | Agreement with the feed spike on every submission |
-| 2 | Its own release, reviewed: the submission lock first on the upload paths; conflict detection shipped switched off, with the tagging of copies without row ids and the never-fail handling of copies refused after a move; the journal changeset of submission review's commands, so detection recognises them; the ETL's split re-attribution (shipped in step 2's first phase, `3c65b55f`) | Goldens unchanged with the switch off. With it on, on a clone: unchanged re-sends of live submissions, with and without row ids, give 0 conflicts and 0 failures; copies to deleted submissions, those deleted before the journal began included, are kept aside once per uploader and counted apart; changed copies after seeded server-side changes are all kept aside. ETL test: split rows re-attributed |
+| 2 | Its own release, reviewed: the submission lock first on the upload paths; conflict detection shipped switched off, with the tagging of copies without row ids and the never-fail handling of copies refused after a move; the journal changeset of submission review's commands, so detection recognises them; the ETL's split re-attribution (shipped in step 2's first phase, `3c65b55f`) | Goldens unchanged with the switch off. With it on, on a clone: unchanged re-sends of live submissions, with and without row ids, give 0 conflicts and 0 failures for every holder; copies to deleted submissions, those deleted before the journal began included, are counted separately (one equal to its holder's base version's state changes nothing; any other is kept aside, once per uploader, then counted); changed copies after seeded server-side changes are all kept aside. ETL test: split rows re-attributed |
 | 3 | Access grants; search (both forms, the guard, the timeout, row semantics, entry tracking, `created`); view; history; the form dictionary; notes | Plans use the indexes; refusals for missing grants and other activities; the test of SQL against the normalizer; entry searches return split rows |
 | 4 | Edits; delete and restore with lineage checks; the conflict view, keep, accept, accept and re-apply; validation; dry run; the journal's second changeset (the kind `RESTORE`, required reasons, `detail`) | I1, I2, I5, I8, I10; 428, 412, 422 and replays; integrity check 11 reads 0 |
 | 5 | Move and split: destination rules, top-level choices, entry tracking, the two-submission transaction, lineage, accept's split rules; the randomized sequences | I2–I7 and I9 on the clone; rows and top-level values conserved |

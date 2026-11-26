@@ -54,6 +54,19 @@ final class ReviewSeed {
             "UPDATE");
     }
 
+    /**
+     * A re-send that 6.5.6 wrote onto a deleted submission: the uploader's {@code UPLOAD} (or {@code LEGACY_UPLOAD})
+     * revision onto the deleted row, which stays deleted, its top-level name set to {@code name}.
+     */
+    void uploadOntoDeleted(String uid, String uploaderLogin, String command, String name) {
+        change(uid, """
+                UPDATE data_submission
+                SET form_data = jsonb_set(form_data, '{main,a2_name}', to_jsonb(CAST(:value AS text))),
+                    lock_version = lock_version + 1, last_modified_date = timezone('UTC', now())
+                WHERE uid = :uid AND deleted""",
+            new MapSqlParameterSource("value", name), "UPDATE", command, userId(uploaderLogin), null, "DELETE");
+    }
+
     /** A delete through submission review, with a reason. */
     void delete(String uid, String resolverLogin) {
         change(uid, """

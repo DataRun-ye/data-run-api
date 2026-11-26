@@ -222,8 +222,9 @@ an open conflict on the submission, their copy only counts there or replaces
 its copy, and never writes the submission. Otherwise an unchanged re-send, or a
 copy equal to the current state, writes nothing. After a server-side change since
 the base version, a changed copy is kept aside in `submission_review.conflict`
-(one open conflict per submission and uploader); after a move, so is a changed
-copy the checks refuse for access (E4124, E4114, E4122). An uploader without a
+(one open conflict per submission and uploader), and so is any changed copy of
+a submission that is deleted now, whatever the base; after a move, so is a
+changed copy the checks refuse for access (E4124, E4114, E4122). An uploader without a
 base of their own is checked first and refused as today. Each such upload item
 is answered `updated`, and detection never fails one: an error in it keeps the
 copy aside with cause `DETECTION_ERROR`. Practice uploads and held releases are
