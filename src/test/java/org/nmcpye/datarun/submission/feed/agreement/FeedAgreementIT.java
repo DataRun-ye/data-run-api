@@ -417,6 +417,27 @@ class FeedAgreementIT {
         }
     }
 
+    /** The bundle's command, as a lab host runs it: the counts to the file named, and the exit status by the result. */
+    @Test
+    void theCommandWritesItsCountsToAFileAndExitsByTheResult() throws Exception {
+        java.nio.file.Path out = java.nio.file.Files.createTempDirectory("feed-agreement").resolve("counts.txt");
+        try {
+            assertThat(FeedAgreementMain.run(Map.of(
+                "FEED_AGREEMENT_JDBC_URL", PG.getJdbcUrl(),
+                "FEED_AGREEMENT_USER", PG.getUsername(),
+                "FEED_AGREEMENT_PASSWORD", PG.getPassword(),
+                "FEED_AGREEMENT_DATABASE", PG.getDatabaseName(),
+                "FEED_AGREEMENT_FORMS", FORM_A_ID + "," + FeedAgreement.NO_FORM,
+                "FEED_AGREEMENT_REPORT", out.toString()))).as("every line agrees").isZero();
+            assertThat(java.nio.file.Files.readString(out)).contains("heads = 13\n");
+            assertThat(FeedAgreementMain.run(Map.of("FEED_AGREEMENT_JDBC_URL", PG.getJdbcUrl(),
+                "FEED_AGREEMENT_REPORT", out.toString()))).as("no database named: refused").isEqualTo(2);
+        } finally {
+            java.nio.file.Files.deleteIfExists(out);
+            java.nio.file.Files.deleteIfExists(out.getParent());
+        }
+    }
+
     @Test
     void itReadsOnlyAndHandsTheConnectionBackAsItCame() throws Exception {
         try (Connection connection = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())) {

@@ -98,8 +98,13 @@ public final class FeedAgreement {
         + "another value)";
     public static final String WHOLE = "values kept whole (an object at a field, or rows at a path no version defines)";
 
-    private static final Path ORACLE_WALK = Path.of("scripts", "feed", "sql", "oracle-walk.sql");
-    private static final Path ORACLE_HEADER = Path.of("scripts", "feed", "sql", "oracle-header.sql");
+    /**
+     * Where the oracle's SQL is read from: {@code scripts/feed/sql} in the repository, or the bundle's {@code sql} when
+     * {@code scripts/feed/agreement.sh} runs it on a lab host ({@code -Dfeed.agreement.sql}).
+     */
+    private static final Path ORACLE = Path.of(System.getProperty("feed.agreement.sql", "scripts/feed/sql"));
+    private static final Path ORACLE_WALK = ORACLE.resolve("oracle-walk.sql");
+    private static final Path ORACLE_HEADER = ORACLE.resolve("oracle-header.sql");
 
     private static final List<String> SESSION = List.of(
         "SET LOCAL work_mem = '8MB'",

@@ -164,7 +164,8 @@ The published map from analytics' `canonical_element_id` to `field_id`, for re-p
 **Agreement harness**:
 The check, counts only, that the submission normalizer agrees with the feed spike's oracle on every head of the
 journal: mapped values by field id, unmapped values by data path, rows by id, and the form and form version. It runs
-read-only on a restored clone the operator names (`scripts/feed/agreement.sh`), before the feed is switched on.
+read-only on a restored clone the operator names, on a lab host from its bundle (`scripts/feed/agreement.sh`),
+before the feed is switched on.
 _Avoid_: reconcile (the publisher's), integrity check (`scripts/integrity`), verification
 
 ## Words to avoid

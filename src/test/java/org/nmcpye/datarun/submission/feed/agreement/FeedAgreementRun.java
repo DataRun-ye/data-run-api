@@ -4,18 +4,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Runs the agreement harness ({@link FeedAgreement}) on the database the environment names, for the coordinator's
- * rehearsal: {@code scripts/feed/agreement.sh} sets the environment from a settings file and runs this class alone
- * ({@code -Dtest=FeedAgreementRun}). Its name matches no suite's pattern, so no suite runs it, and without
+ * Runs the agreement harness ({@link FeedAgreement}) through Maven on the database the environment names, for a local
+ * database only: anything run against the lab runs on a lab host, from the bundle ({@link FeedAgreementMain},
+ * {@code scripts/feed/agreement.sh}). Its name matches no suite's pattern, so no suite runs it, and without
  * {@code FEED_AGREEMENT_JDBC_URL} it is skipped. The counts go to {@code target/feed-agreement.txt}; it fails unless
  * every agreement line reads 0.
  */
@@ -32,14 +30,6 @@ class FeedAgreementRun {
 
     /** Measures the database the environment names and writes the counts to {@code out}. */
     static FeedAgreement.Report run(Map<String, String> environment, Path out) throws Exception {
-        FeedAgreement.Settings settings = FeedAgreement.Settings.fromEnvironment(environment);
-        FeedAgreement.Report report;
-        try (Connection connection = FeedAgreement.connect(settings)) {
-            report = FeedAgreement.run(connection, settings);
-        }
-        String text = report.text();
-        Files.createDirectories(out.toAbsolutePath().getParent());
-        Files.writeString(out, text);
-        return report;
+        return FeedAgreementMain.measure(environment, out);
     }
 }
