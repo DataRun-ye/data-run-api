@@ -11,13 +11,13 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.nmcpye.datarun.common.exceptions.FailureShape;
 import org.nmcpye.datarun.config.activation.ActivationSwitch;
 import org.nmcpye.datarun.config.activation.ActivationSwitches;
-import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.revision.SubmissionRevisionReader;
 import org.nmcpye.datarun.jpa.datasubmission.validation.StoredSubmissionGuard;
 import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
+import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.submission.normalized.StoredJson;
 import org.nmcpye.datarun.submission.normalized.SubmissionNormalizer;
@@ -48,9 +48,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Conflict detection's rehearsal on a real database (spec, build order, step S2): what detection decides for every
@@ -713,25 +710,33 @@ public final class ConflictRehearsal implements AutoCloseable {
             "SELECT login FROM app_user WHERE id = :id", Map.of("id", userId), String.class).stream().findFirst();
     }
 
-    /** The form version's repeatable sections, which say which arrays hold rows; none when it cannot be read. */
+    /**
+     * The form version's repeatable sections, which say which arrays hold rows, in a real context made with
+     * {@link TemplateVersionContext}'s own constructor from the version's sections only. That answers the repeat-id walk
+     * as the upload's context does; the upload's resolver also reads the fields, and fails where two elements share a
+     * path. None when the sections cannot be read or share a path. Never a mock: the walk asks the context for its paths
+     * once for every key of every document, and a mock remembers each call it answers, so a cached one ran the
+     * rehearsal out of memory at about the 30,000th submission.
+     */
     private TemplateVersionContext template(String formVersion) {
         return templates.computeIfAbsent(String.valueOf(formVersion), uid -> {
-            Map<String, AbstractElement> byPath = new LinkedHashMap<>();
             try {
                 String sections = jdbc.queryForList(
                     "SELECT sections::text FROM data_template_version WHERE uid = :uid", Map.of("uid", uid),
                     String.class).stream().findFirst().orElse("[]");
                 List<FormSectionConf> parsed = new ObjectMapper().readValue(sections, new TypeReference<>() {
                 });
-                parsed.stream().filter(section -> section.getPath() != null)
-                    .forEach(section -> byPath.put(section.getPath(), section));
+                return context(uid, parsed.stream().filter(section -> section.getPath() != null).toList());
             } catch (Exception unreadable) {
-                holders.add("form versions whose sections could not be read (copies not tagged)");
+                holders.add("form versions whose sections could not be read or resolved (copies not tagged)");
+                return context(uid, List.of());
             }
-            TemplateVersionContext context = mock(TemplateVersionContext.class);
-            when(context.getElementsByPath()).thenReturn(Map.copyOf(byPath));
-            return context;
         });
+    }
+
+    private static TemplateVersionContext context(String formVersion, List<FormSectionConf> sections) {
+        return new TemplateVersionContext(
+            new DataTemplateInstanceDto(null, formVersion, null, null, null, null, null, List.of(), sections));
     }
 
     /** Before any connection: a database is named, and neither it nor the host is production's. */
