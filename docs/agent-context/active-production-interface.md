@@ -634,7 +634,9 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     the submission feed is on, a poll pings only while the feed is within its
     freshness target (`datarun.feed.freshness-target`, 2 minutes): nothing
     dead, and the oldest change it has not published and its oldest pending
-    change both younger than the target (`feed.freshness`).
+    change both younger than the target (`feed.freshness`). Until tall and
+    events retire this is the ETL's heartbeat, which the feed's freshness also
+    gates; once they retire, it is the feed's heartbeat.
   - One-time setup in GlitchTip (owner): create the project `datarun-api`
     (platform Java) and copy its DSN. Under Uptime Monitors, add a monitor of
     type Heartbeat with an interval of 300 s and copy its URL, of the form

@@ -126,8 +126,9 @@ A change of the feed's given up on: a pending change past the attempt cap, kept 
 reconcile publish its submission.
 
 **Heartbeat**:
-The signal the publisher sends only while the feed is within its freshness target and nothing is dead; its absence
-raises an alert.
+The signal sent after each successful poll of the runtime that applies the outbox's changes, only while the feed is
+within its freshness target and nothing is dead; its absence raises an alert. Until tall and events retire it is that
+runtime's heartbeat, which the feed's freshness also gates; once they retire, it is the feed's.
 
 ### Keeping it complete
 

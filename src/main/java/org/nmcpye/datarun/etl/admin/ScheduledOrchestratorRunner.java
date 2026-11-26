@@ -35,6 +35,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * backlog first again after each, for as long as the poll may run. A batch that scans for work stops within its scan
  * budget ({@link DeferredWork#scanBudget}), which must be shorter than a poll. A poll that succeeds pings the heartbeat
  * monitor only while every such work is within its freshness target ({@link DeferredWork#withinFreshnessTarget}).
+ * Until tall and events retire, the heartbeat is this runtime's and the feed's freshness also gates it; once they
+ * retire, it is the feed's heartbeat.
  */
 @Service
 public class ScheduledOrchestratorRunner implements SchedulingConfigurer {

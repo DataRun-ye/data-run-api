@@ -22,6 +22,11 @@ import java.util.function.LongSupplier;
  * the ETL down, so it notices an ETL that stopped polling or keeps failing, which no error line shows. Production
  * points it at a GlitchTip "Heartbeat" uptime monitor, whose check accepts only POST. An empty URL turns it off.
  * <p>
+ * While the submission feed is on, the poll pings only while the feed is within its freshness target
+ * ({@code ScheduledOrchestratorRunner}), so the monitor also reports a feed that fell behind or gave up on a change.
+ * Until tall and events retire this is the ETL's heartbeat, which the feed's freshness also gates; once they retire, it
+ * is the feed's heartbeat.
+ * <p>
  * Nothing here can slow, block or fail a poll: the request goes out on the HTTP client's own threads and gives up
  * after {@link #TIMEOUT}, a failure is logged at DEBUG only, and {@link #pollSucceeded()} never throws. The URL is
  * never logged: it is the monitor's credential.
