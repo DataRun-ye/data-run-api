@@ -522,9 +522,10 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   `datarun.etl.enabled=false` stops an instance from polling. Scheduling is off
   in the test profiles. While the submission feed is on (switch
   `submission-feed`), every poll takes the lock, and once no row is due it runs
-  the feed's own work (its retries, republication and reconcile) one batch at a
-  time, claiming due rows first again after each batch, for as long as the poll
-  may run. A reconcile batch that finds nothing to publish reads for at most
+  the feed's own work (its retries, republication, first publication and
+  reconcile, in that order) one batch at a time, claiming due rows first again
+  after each batch, for as long as the poll may run. A reconcile batch that
+  finds nothing to publish reads for at most
   `datarun.feed.reconcile-scan-budget` (1 s), which must be shorter than
   `datarun.etl.max-poll-duration` or the application does not start.
 - **Claims.** A claim takes `pending` or `failed` rows whose `next_attempt_at`
@@ -560,18 +561,28 @@ voids, delete markers) belongs to the projector work, not to this runtime.
 
   `outbox_processing` keeps one audit row per run and row: `success`,
   `failure` or `dead`.
-- **The feed's admin route.** `/management/feedpublication`, an admin's only, as
-  every management route but health and info (exposed in application.yml).
-  `GET` shows where the feed's first publication stands and how many republish
+- **The feed's admin route.** `/management/feedpublication` starts the feed's
+  first publication and republishes a scope. Both are operational steps, run
+  on the owner's go: the first publication at switch-on (phase B of the feed's
+  rollout), a republication after a fix. The admin's v1 tools do not call it.
+  Only an admin reaches it, as every management route but health and info
+  (exposed in application.yml), and both are refused (409) while the feed is
+  off. `GET` shows where the first publication stands and how many republish
   marks wait. `POST {"action": "first-publication"}` starts the first
   publication: every submission's head, in id order, in batches of
-  `datarun.feed.batch-size` behind the live backlog, its mark kept in
-  `feed_ops.first_publication` so that a restart goes on from it.
-  `POST {"action": "republication"}`, with `formId` or `submissionIds`
+  `datarun.feed.batch-size` (200 by default) behind the live backlog. It is
+  resumable: its mark, in `feed_ops.first_publication`, lets a restart go on
+  from where it stopped, and a second start while one is under way is refused
+  (409). `POST {"action": "republication"}`, with `formId` or `submissionIds`
   (comma-separated) or neither for every form, marks the records the feed holds
   in that scope; each is written again at its held version with new positions,
-  a newer held version skipped. Neither writes an outbox row, and both are
-  refused (409) while the feed is off.
+  skipping a record whose held version is newer than its head. Neither writes
+  an outbox row. Switching the feed on also starts reconcile, which publishes
+  every head the feed lacks, so writing every submission begins at switch-on
+  itself. A first publication started then goes before reconcile, in id order,
+  skipping the heads already held, and reconcile goes on once it ends. The
+  first of the two to finish with every head written sets
+  `first_publication_completed_at` in `feed.freshness`.
 - **Dead rows.** A dead row is not claimed again. Put one back only after its
   cause is fixed, and reset its attempts, or the next claim marks it dead again:
   `UPDATE outbox SET status = 'pending', attempt = 0, next_attempt_at = NULL

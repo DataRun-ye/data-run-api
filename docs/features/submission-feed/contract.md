@@ -1,6 +1,9 @@
 # Submission feed: contract, version 1
 
-Status: PROPOSED AND REVIEWED (2026-11-25), NOT BUILT. The words are those of [CONTEXT.md](CONTEXT.md).
+Status: PROPOSED AND REVIEWED (2026-11-25); BUILT AND SWITCHED OFF (2026-11-26). A revision comes before the first
+publication (engineering, 2026-11-26): the creator's user id, placement columns, and reference values as ids. The
+first publication waits for phase B. What is built: [README.md, Built](README.md#built). The words are those of
+[CONTEXT.md](CONTEXT.md).
 
 The feed publishes the current state of every submission. Downstream wants the current state, and nobody reads who
 made a change (owner, 2026-11-25), so the feed publishes no history, no actor and no command; history stays in

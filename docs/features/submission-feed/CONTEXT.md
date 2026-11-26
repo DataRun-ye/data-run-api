@@ -1,7 +1,8 @@
 # Submission feed
 
 The words of the submission feed: what DataRun publishes for downstream analytics, how a consumer reads it, and how
-the publisher keeps it complete. Status: LIVING. Contract version 1 is proposed (2026-11-25); the feed is not built.
+the publisher keeps it complete. Status: LIVING. Contract version 1 is proposed and reviewed (2026-11-25), and the
+feed is built to it and switched off (2026-11-26); its first publication waits for phase B and for a contract revision.
 
 - These are engineering and downstream words; operations see none of them.
 - Words shared with [submission review](../submission-review/CONTEXT.md) mean the same in both: form, activity,
