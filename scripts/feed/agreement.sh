@@ -51,5 +51,6 @@ set -a
 . "$settings"
 set +a
 
-exec "${JAVA:-java}" -Dfeed.agreement.sql=sql -cp "classes:harness:lib/*" \
+# Out of memory, the JVM exits 3, as any other failure of the run does, rather than going on half alive.
+exec "${JAVA:-java}" -XX:+ExitOnOutOfMemoryError -Dfeed.agreement.sql=sql -cp "classes:harness:lib/*" \
     org.nmcpye.datarun.submission.feed.agreement.FeedAgreementMain

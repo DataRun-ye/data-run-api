@@ -127,6 +127,18 @@ public final class FeedAgreement {
     }
 
     /**
+     * A run its settings refuse: a setting missing or malformed, a database that is not the one named, production
+     * without leave, a session that would not be read-only. The command exits 2 for it, and 3 for any failure during
+     * the run, whatever its type ({@link FeedAgreementMain}).
+     */
+    static final class Refused extends RuntimeException {
+
+        Refused(String message) {
+            super(message);
+        }
+    }
+
+    /**
      * Where to connect, the database the operator names (the run refuses any other), whether production may be
      * measured, which forms (none: all), and how many heads per batch.
      */
@@ -134,10 +146,12 @@ public final class FeedAgreement {
                            List<String> formIds, int batchSize) {
 
         public Settings {
-            Objects.requireNonNull(jdbcUrl, "jdbcUrl");
+            if (jdbcUrl == null || jdbcUrl.isBlank()) {
+                throw new Refused("Name the database's JDBC URL in FEED_AGREEMENT_JDBC_URL");
+            }
             formIds = formIds == null ? List.of() : List.copyOf(formIds);
             if (batchSize < 1) {
-                throw new IllegalArgumentException("a batch holds at least one head");
+                throw new Refused("A batch holds at least one head (FEED_AGREEMENT_BATCH)");
             }
         }
 
@@ -147,6 +161,12 @@ public final class FeedAgreement {
          */
         public static Settings fromEnvironment(Map<String, String> environment) {
             String forms = environment.getOrDefault("FEED_AGREEMENT_FORMS", "");
+            int batchSize;
+            try {
+                batchSize = Integer.parseInt(environment.getOrDefault("FEED_AGREEMENT_BATCH", "500").trim());
+            } catch (NumberFormatException notANumber) {
+                throw new Refused("FEED_AGREEMENT_BATCH is not a whole number");
+            }
             return new Settings(
                 environment.get("FEED_AGREEMENT_JDBC_URL"),
                 environment.get("FEED_AGREEMENT_USER"),
@@ -154,7 +174,7 @@ public final class FeedAgreement {
                 environment.get("FEED_AGREEMENT_DATABASE"),
                 "true".equals(environment.get("FEED_AGREEMENT_PRODUCTION")),
                 forms.isBlank() ? List.of() : List.of(forms.trim().split("\\s*,\\s*")),
-                Integer.parseInt(environment.getOrDefault("FEED_AGREEMENT_BATCH", "500")));
+                batchSize);
         }
     }
 
@@ -209,7 +229,7 @@ public final class FeedAgreement {
         requireNamedDatabase(settings);
         String host = host(settings.jdbcUrl()).toLowerCase(Locale.ROOT);
         if (PRODUCTION_HOSTS.contains(host) && !settings.production()) {
-            throw new IllegalArgumentException("Host " + host + " is production's database host: set "
+            throw new Refused("Host " + host + " is production's database host: set "
                 + "FEED_AGREEMENT_PRODUCTION=true to measure production");
         }
         return DriverManager.getConnection(settings.jdbcUrl(), settings.user(), settings.password());
@@ -217,15 +237,20 @@ public final class FeedAgreement {
 
     private static void requireNamedDatabase(Settings settings) {
         if (settings.database() == null || settings.database().isBlank()) {
-            throw new IllegalArgumentException("Name the database to measure in FEED_AGREEMENT_DATABASE");
+            throw new Refused("Name the database to measure in FEED_AGREEMENT_DATABASE");
         }
     }
 
     private static String host(String jdbcUrl) {
         if (!jdbcUrl.startsWith("jdbc:postgresql:")) {
-            throw new IllegalArgumentException("The agreement harness reads PostgreSQL only");
+            throw new Refused("The agreement harness reads PostgreSQL only");
         }
-        String host = URI.create(jdbcUrl.substring("jdbc:".length())).getHost();
+        String host;
+        try {
+            host = URI.create(jdbcUrl.substring("jdbc:".length())).getHost();
+        } catch (IllegalArgumentException malformed) {
+            throw new Refused("FEED_AGREEMENT_JDBC_URL is not a JDBC URL");
+        }
         return host == null ? "" : host;
     }
 
@@ -236,11 +261,11 @@ public final class FeedAgreement {
             rs.next();
             String connected = rs.getString(1);
             if (!connected.equals(settings.database())) {
-                throw new IllegalStateException("Connected to database " + connected + ", not to "
+                throw new Refused("Connected to database " + connected + ", not to "
                     + settings.database() + ", the database named in FEED_AGREEMENT_DATABASE");
             }
             if (PRODUCTION_DATABASES.contains(connected) && !settings.production()) {
-                throw new IllegalStateException("Database " + connected + " is production's database: set "
+                throw new Refused("Database " + connected + " is production's database: set "
                     + "FEED_AGREEMENT_PRODUCTION=true to measure production");
             }
         }
@@ -322,7 +347,7 @@ public final class FeedAgreement {
         try (ResultSet rs = statement.executeQuery(show)) {
             rs.next();
             if (!expected.equals(rs.getString(1))) {
-                throw new IllegalStateException(show + " is not " + expected + ": the harness runs read-only only");
+                throw new Refused(show + " is not " + expected + ": the harness runs read-only only");
             }
         }
     }

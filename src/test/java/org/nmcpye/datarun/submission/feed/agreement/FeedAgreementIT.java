@@ -462,14 +462,14 @@ class FeedAgreementIT {
             List.of(), 500))).hasMessageContaining("Name the database to measure");
         assertThatThrownBy(() -> run(new FeedAgreement.Settings(url, PG.getUsername(), PG.getPassword(),
             "datarun_staging", false, List.of(), 500)))
-            .as("connected to another database than the one named").isInstanceOf(IllegalStateException.class)
+            .as("connected to another database than the one named").isInstanceOf(FeedAgreement.Refused.class)
             .hasMessageContaining("not to datarun_staging");
 
         // production's database host, by name or address, refused before any connection is tried
         for (String host : List.of("datarun-prod-db.lab", "DATARUN-PROD-DB.LAB", "192.168.1.111")) {
             assertThatThrownBy(() -> FeedAgreement.connect(new FeedAgreement.Settings(
                 "jdbc:postgresql://" + host + ":5432/nmcpdb?sslmode=require", "u", "p", "nmcpdb", false, List.of(), 1)))
-                .as(host).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("FEED_AGREEMENT_PRODUCTION");
+                .as(host).isInstanceOf(FeedAgreement.Refused.class).hasMessageContaining("FEED_AGREEMENT_PRODUCTION");
         }
         // staging's clone is not production, whatever its host's name says
         assertThatThrownBy(() -> FeedAgreement.connect(new FeedAgreement.Settings(
@@ -483,7 +483,7 @@ class FeedAgreementIT {
             String nmcpdb = url.substring(0, url.lastIndexOf('/') + 1) + "nmcpdb";
             assertThatThrownBy(() -> run(new FeedAgreement.Settings(nmcpdb, PG.getUsername(), PG.getPassword(),
                 "nmcpdb", false, List.of(), 500)))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("production's database");
+                .isInstanceOf(FeedAgreement.Refused.class).hasMessageContaining("production's database");
         } finally {
             db.execute("DROP DATABASE nmcpdb");
         }
