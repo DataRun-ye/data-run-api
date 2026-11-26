@@ -56,9 +56,10 @@ import java.util.function.BiFunction;
  * without the shape of a definition they are zero rows or an empty multi-select. A head whose rows use one id twice is
  * compared without row ids, since the oracle cannot give the later rows their derived ids.</p>
  *
- * <p>The lines whose names start with "agree:" must read 0; the others are for reference. What the normalizer keeps
- * whole, an object at a field or rows at a path no version defines, is its own category: the value is set apart with
- * the oracle's values and rows inside it, and counted.</p>
+ * <p>The lines whose names start with "agree:" must read 0; the others are for reference. What is kept whole, an object
+ * at a field or rows at a path no version defines, is its own category, compared apart: the oracle decides it in its
+ * own SQL, from the definitions, and never walks into it, so a normalizer that walks into such a value, or keeps another
+ * one whole, is counted.</p>
  *
  * <p><b>Where it runs.</b> The operator names the database to measure ({@code FEED_AGREEMENT_DATABASE}), and the run
  * refuses unless the database it is connected to is that one ({@code current_database()}). A second guard refuses
@@ -89,6 +90,12 @@ public final class FeedAgreement {
     public static final String ROWS_MISSING = AGREE + "head rows missing from the normalized rows";
     public static final String ROWS_EXTRA = AGREE + "normalized rows not in the head";
     public static final String FORM_DIFFERS = AGREE + "form or form version differs from the head's";
+    public static final String WHOLE_MISSING = AGREE + "values kept whole missing (kept whole by the head's rule, not by "
+        + "the normalizer)";
+    public static final String WHOLE_EXTRA = AGREE + "values kept whole extra (kept whole by the normalizer, not by the "
+        + "head's rule)";
+    public static final String WHOLE_DIFFERENT = AGREE + "values kept whole different (one field or path of one row, "
+        + "another value)";
     public static final String WHOLE = "values kept whole (an object at a field, or rows at a path no version defines)";
 
     private static final Path ORACLE_WALK = Path.of("scripts", "feed", "sql", "oracle-walk.sql");
@@ -181,10 +188,9 @@ public final class FeedAgreement {
         for (String line : List.of("heads", "submissions without a head", "heads whose document is not an object",
             "oracle mapped values", "oracle unmapped values", "oracle empty arrays (apart)", "oracle rows",
             "normalized values", "normalized unmapped values", "normalized empty arrays (apart)", "normalized rows",
-            "heads using a row id twice (compared without row ids)", WHOLE, "oracle values inside values kept whole",
-            "oracle rows inside values kept whole",
+            "heads using a row id twice (compared without row ids)", WHOLE, "oracle values kept whole",
             MAPPED_MISSING, MAPPED_EXTRA, MAPPED_DIFFERENT, UNMAPPED_MISSING, UNMAPPED_EXTRA, UNMAPPED_DIFFERENT,
-            ROWS_MISSING, ROWS_EXTRA, FORM_DIFFERS)) {
+            WHOLE_MISSING, WHOLE_EXTRA, WHOLE_DIFFERENT, ROWS_MISSING, ROWS_EXTRA, FORM_DIFFERS)) {
             lines.put(line, 0L);
         }
     }
@@ -324,8 +330,11 @@ public final class FeedAgreement {
     private record Value(String rowId, String key, String json) {
     }
 
-    /** A value of the oracle: its row, data path, JSON, and the field it is expected under (null: unmapped). */
-    private record Leaf(String rowId, String path, String json, String fieldId) {
+    /**
+     * A value of the oracle: its row, data path, JSON, the field it is expected under (null: unmapped), and whether the
+     * oracle keeps it whole.
+     */
+    private record Leaf(String rowId, String path, String json, String fieldId, boolean whole) {
     }
 
     /** A row of the oracle: its id, the row it is nested in, and its section's data path. */
@@ -340,9 +349,6 @@ public final class FeedAgreement {
         String formVersionId;
     }
 
-    /** A value the normalizer keeps whole: its row and data path. */
-    private record Whole(String rowId, String path) {
-    }
 
     private void compare(Connection connection, String walk, String header, List<Head> heads,
                          Map<String, FormDefinitionJdbcReader.Snapshot> definitions) throws SQLException {
@@ -361,7 +367,7 @@ public final class FeedAgreement {
                             rs.getString("path")));
                     } else {
                         side.leaves.add(new Leaf(rs.getString("row_id"), rs.getString("path"),
-                            exact(rs.getString("value")), rs.getString("field_id")));
+                            exact(rs.getString("value")), rs.getString("field_id"), rs.getBoolean("is_whole")));
                     }
                 }
             }
@@ -393,7 +399,7 @@ public final class FeedAgreement {
         // the normalizer's side: mapped by field id, unmapped by data path, what it keeps whole apart
         List<Value> mapped = new ArrayList<>();
         List<Value> unmapped = new ArrayList<>();
-        List<Whole> wholes = new ArrayList<>();
+        List<Value> wholes = new ArrayList<>();
         List<String> rows = new ArrayList<>();
         collect(null, normalized.values(), normalized.unmapped(), mapped, unmapped, wholes);
         for (NormalizedRow row : normalized.rows()) {
@@ -402,13 +408,14 @@ public final class FeedAgreement {
         }
         add("normalized rows", rows.size());
 
-        // the oracle's side, without what lies inside a value the normalizer keeps whole
-        Set<String> rowsInside = rowsInside(oracle.rows, wholes);
+        // the oracle's side: it decides itself what is kept whole, and never walks into it
         List<Value> expectedMapped = new ArrayList<>();
         List<Value> expectedUnmapped = new ArrayList<>();
+        List<Value> expectedWholes = new ArrayList<>();
         for (Leaf leaf : oracle.leaves) {
-            if (rowsInside.contains(leaf.rowId()) || insideAWhole(leaf.rowId(), leaf.path(), wholes)) {
-                add("oracle values inside values kept whole", 1);
+            if (leaf.whole()) {
+                add("oracle values kept whole", 1);
+                expectedWholes.add(new Value(leaf.rowId(), wholeKey(leaf.fieldId(), leaf.path()), leaf.json()));
             } else if (leaf.json().equals("[]")) {
                 add("oracle empty arrays (apart)", 1);
             } else {
@@ -424,11 +431,7 @@ public final class FeedAgreement {
         }
         List<String> headRows = new ArrayList<>();
         for (OracleRow row : oracle.rows) {
-            if (rowsInside.contains(row.id())) {
-                add("oracle rows inside values kept whole", 1);
-            } else {
-                headRows.add(row.id());
-            }
+            headRows.add(row.id());
         }
         add("oracle mapped values", expectedMapped.size());
         add("oracle unmapped values", expectedUnmapped.size());
@@ -440,6 +443,7 @@ public final class FeedAgreement {
         }
         long[] mappedCounts = difference(expectedMapped, mapped, rowIdUsedTwice);
         long[] unmappedCounts = difference(expectedUnmapped, unmapped, rowIdUsedTwice);
+        long[] wholeCounts = difference(expectedWholes, wholes, rowIdUsedTwice);
 
         long rowsMissing;
         long rowsExtra;
@@ -462,6 +466,9 @@ public final class FeedAgreement {
         disagree(form, "unmapped missing", UNMAPPED_MISSING, unmappedCounts[0]);
         disagree(form, "unmapped extra", UNMAPPED_EXTRA, unmappedCounts[1]);
         disagree(form, "unmapped different", UNMAPPED_DIFFERENT, unmappedCounts[2]);
+        disagree(form, "whole missing", WHOLE_MISSING, wholeCounts[0]);
+        disagree(form, "whole extra", WHOLE_EXTRA, wholeCounts[1]);
+        disagree(form, "whole different", WHOLE_DIFFERENT, wholeCounts[2]);
         disagree(form, "rows missing", ROWS_MISSING, rowsMissing);
         disagree(form, "rows extra", ROWS_EXTRA, rowsExtra);
         disagree(form, "form or version", FORM_DIFFERS, header);
@@ -494,82 +501,66 @@ public final class FeedAgreement {
         return new long[]{missing, extra, different};
     }
 
-    /** One container's values, by kind; empty arrays counted apart, values kept whole set apart. */
+    /** One container's values, by kind; empty arrays counted apart, values kept whole compared apart. */
     private void collect(String rowId, List<FieldValue> values, List<UnmappedValue> unmappedValues, List<Value> mapped,
-                         List<Value> unmapped, List<Whole> wholes) {
+                         List<Value> unmapped, List<Value> wholes) {
         for (FieldValue value : values) {
             add("normalized values", 1);
-            if (keep(rowId, value.path(), value.value(), wholes)) {
-                mapped.add(new Value(rowId, value.fieldId(), StoredJson.write(value.value())));
+            String json = StoredJson.write(value.value());
+            if (isWhole(value.path(), value.value())) {
+                add(WHOLE, 1);
+                wholes.add(new Value(rowId, wholeKey(value.fieldId(), value.path()), json));
+            } else if (compared(value.value())) {
+                mapped.add(new Value(rowId, value.fieldId(), json));
             }
         }
         for (UnmappedValue value : unmappedValues) {
             add("normalized unmapped values", 1);
             add("normalized unmapped values, " + value.reason(), 1);
-            if (keep(rowId, value.path(), value.value(), wholes)) {
-                unmapped.add(new Value(rowId, value.path(), StoredJson.write(value.value())));
+            String json = StoredJson.write(value.value());
+            if (isWhole(value.path(), value.value())) {
+                add(WHOLE, 1);
+                wholes.add(new Value(rowId, wholeKey(null, value.path()), json));
+            } else if (compared(value.value())) {
+                unmapped.add(new Value(rowId, value.path(), json));
             }
         }
     }
 
-    /** Whether a normalized value is compared: not an empty array, and not a value kept whole. */
-    private boolean keep(String rowId, String path, JsonNode value, List<Whole> wholes) {
+    /** Whether a normalized value is compared with the oracle's values: not an empty array, which is counted apart. */
+    private boolean compared(JsonNode value) {
         if (value.equals(EMPTY_ARRAY)) {
             add("normalized empty arrays (apart)", 1);
-            return false;
-        }
-        // a document that is not an object is one value to both sides
-        if (!path.isEmpty() && holdsObjects(value)) {
-            add(WHOLE, 1);
-            wholes.add(new Whole(rowId, path));
             return false;
         }
         return true;
     }
 
-    private static boolean holdsObjects(JsonNode value) {
+    /**
+     * Whether a value is one the normalizer kept whole: an object, or rows (a non-empty array of objects only), at a
+     * data path. A document that is not an object is one value to both sides, at the empty path.
+     */
+    private static boolean isWhole(String path, JsonNode value) {
+        if (path.isEmpty()) {
+            return false;
+        }
         if (value.isObject()) {
             return true;
         }
-        if (value.isArray()) {
-            for (JsonNode element : value) {
-                if (element.isObject()) {
-                    return true;
-                }
+        if (!value.isArray() || value.isEmpty()) {
+            return false;
+        }
+        for (JsonNode element : value) {
+            if (!element.isObject()) {
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
-    /** Whether a place (a row, or outside every row, and a data path) lies in a value kept whole. */
-    private static boolean insideAWhole(String rowId, String path, List<Whole> wholes) {
-        for (Whole whole : wholes) {
-            if (Objects.equals(whole.rowId(), rowId)
-                && (path.equals(whole.path()) || path.startsWith(whole.path() + "."))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /** The oracle's rows that lie in a value the normalizer keeps whole, nested ones included. */
-    private static Set<String> rowsInside(List<OracleRow> rows, List<Whole> wholes) {
-        Set<String> inside = new HashSet<>();
-        if (wholes.isEmpty()) {
-            return inside;
-        }
-        boolean grew = true;
-        while (grew) {
-            grew = false;
-            for (OracleRow row : rows) {
-                if (!inside.contains(row.id())
-                    && (insideAWhole(row.parentId(), row.path(), wholes) || inside.contains(row.parentId()))) {
-                    inside.add(row.id());
-                    grew = true;
-                }
-            }
-        }
-        return inside;
+    /** A value kept whole is compared by its field when it has one, else by its data path. */
+    private static String wholeKey(String fieldId, String path) {
+        return fieldId != null ? "field " + fieldId : "path " + path;
     }
 
     /** The values as a multiset, by row or, for a head using a row id twice, without rows. */

@@ -352,21 +352,47 @@ class FeedAgreementIT {
     }
 
     /**
-     * Rows at a path no version defines, and an object at a field: one value to the normalizer, rows and values to
-     * the oracle. They are their own category, with what the oracle finds inside them, and inflate no agreement line.
+     * Rows at a path no version defines, and an object at a field: each one value, kept whole. The oracle decides this
+     * from the definitions in its own SQL and never walks into them, and the two sides' values kept whole are compared
+     * apart.
      */
     @Test
-    void whatTheNormalizerKeepsWholeIsItsOwnCategory() throws Exception {
+    void whatIsKeptWholeIsDecidedByTheOracleAndComparedApart() throws Exception {
         FeedAgreement.Report report = run(List.of(FORM_KEEP_ID), 500, SubmissionNormalizer::normalize);
 
         assertThat(report.agrees()).as(report.text()).isTrue();
         assertThat(report.lines()).contains(
             entry("heads", 2L),
             entry(FeedAgreement.WHOLE, 2L),
-            entry("oracle values inside values kept whole", 4L),
-            entry("oracle rows inside values kept whole", 2L),
+            entry("oracle values kept whole", 2L),
+            entry(FeedAgreement.WHOLE_MISSING, 0L),
+            entry(FeedAgreement.WHOLE_EXTRA, 0L),
+            entry(FeedAgreement.WHOLE_DIFFERENT, 0L),
             entry("oracle mapped values", 1L),
             entry("oracle rows", 0L));
+    }
+
+    /**
+     * A normalizer that walks into an object the head's rule keeps whole (an object at a field) is caught: the oracle
+     * keeps it whole and has nothing inside it, so the whole value is missing and the values inside are extra.
+     */
+    @Test
+    void aValueKeptWholeThatTheNormalizerWalksIntoIsCaught() throws Exception {
+        FeedAgreement.Report report = run(List.of(FORM_KEEP_ID), 500, changing("01JAGSB0000000000000000016", real -> {
+            FieldValue geo = real.values().get(0);
+            List<UnmappedValue> inside = new ArrayList<>(real.unmapped());
+            geo.value().fields().forEachRemaining(member -> inside.add(new UnmappedValue(
+                geo.path() + "." + member.getKey(), member.getValue(), UnmappedReason.PATH_NOT_IN_FORM)));
+            return new NormalizedSubmission(real.submissionId(), real.formId(), real.formVersionId(),
+                real.values().subList(1, real.values().size()), inside, real.rows(), real.flags());
+        }));
+
+        assertThat(report.lines()).contains(
+            entry(FeedAgreement.WHOLE_MISSING, 1L),
+            entry(FeedAgreement.WHOLE_EXTRA, 0L),
+            entry(FeedAgreement.UNMAPPED_EXTRA, 2L),
+            entry(FeedAgreement.MAPPED_MISSING, 0L));
+        assertThat(report.agrees()).isFalse();
     }
 
     /** The coordinator's entry point: the environment names the database, and the counts go to a file. */
