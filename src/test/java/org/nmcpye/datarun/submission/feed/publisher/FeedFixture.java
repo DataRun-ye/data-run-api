@@ -516,6 +516,7 @@ final class FeedFixture {
             update("DELETE FROM feed_ops.pending");
             update("DELETE FROM feed_ops.republish");
             update("DELETE FROM feed_ops.normalization_flags");
+            update("DELETE FROM feed_ops.first_publication");
             SubmissionTestPurge.purge(jdbc, "s.id LIKE :prefix", Map.of("prefix", ID_PREFIX + "%"));
         });
     }

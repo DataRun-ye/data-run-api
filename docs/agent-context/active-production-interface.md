@@ -560,6 +560,18 @@ voids, delete markers) belongs to the projector work, not to this runtime.
 
   `outbox_processing` keeps one audit row per run and row: `success`,
   `failure` or `dead`.
+- **The feed's admin route.** `/management/feedpublication`, an admin's only, as
+  every management route but health and info (exposed in application.yml).
+  `GET` shows where the feed's first publication stands and how many republish
+  marks wait. `POST {"action": "first-publication"}` starts the first
+  publication: every submission's head, in id order, in batches of
+  `datarun.feed.batch-size` behind the live backlog, its mark kept in
+  `feed_ops.first_publication` so that a restart goes on from it.
+  `POST {"action": "republication"}`, with `formId` or `submissionIds`
+  (comma-separated) or neither for every form, marks the records the feed holds
+  in that scope; each is written again at its held version with new positions,
+  a newer held version skipped. Neither writes an outbox row, and both are
+  refused (409) while the feed is off.
 - **Dead rows.** A dead row is not claimed again. Put one back only after its
   cause is fixed, and reset its attempts, or the next claim marks it dead again:
   `UPDATE outbox SET status = 'pending', attempt = 0, next_attempt_at = NULL

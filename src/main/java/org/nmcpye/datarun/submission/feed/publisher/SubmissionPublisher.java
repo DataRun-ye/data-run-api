@@ -55,8 +55,11 @@ import java.util.function.IntSupplier;
  * <p><b>Its deferred work</b> runs one batch at a time once no outbox change is due, the live changes first again after
  * each ({@link #runBatch}): pending changes due for a retry, each failure counting an attempt until the cap makes it
  * dead; then republish marks, each written again at the same version with new positions, its mark kept while it fails
- * ({@link RepublishMarks}); then reconcile, which publishes every head the feed lacks or holds at another version, at
- * start (also switch-on) and nightly ({@link Reconcile}). Each batch is one transaction of its own under the feed's
+ * ({@link RepublishMarks}); then the first publication, which writes every submission's head in id order from its mark
+ * ({@link FirstPublication}); then reconcile, which publishes every head the feed lacks or holds at another version, at
+ * start (also switch-on) and nightly ({@link Reconcile}). An admin starts the first publication and marks a scope for
+ * republication ({@link FeedPublicationEndpoint}); neither writes an outbox row. Each batch is one transaction of its
+ * own under the feed's
  * lock, each submission in its own savepoint, and stops starting submissions once it has run half the feed part's
  * limit, so it holds the lock briefly.</p>
  *
@@ -88,6 +91,8 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
     private final FeedWriter writer;
     private final PendingChanges pending;
     private final RepublishMarks republishMarks;
+    private final FirstPublication firstPublication = new FirstPublication();
+    private final StoredSubmissionJdbcReader submissions;
     private final Reconcile reconcile;
     private final ChangeBacklog backlog;
     private final Freshness freshness = new Freshness();
@@ -120,6 +125,7 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
         this.writer = writer;
         this.pending = new PendingChanges(properties);
         this.republishMarks = new RepublishMarks(properties);
+        this.submissions = submissions;
         this.reconcile = new Reconcile(submissions, properties.getReconcileScanBudget());
         this.backlog = backlog;
         this.afterBacklog = new TransactionTemplate(transactionManager);
@@ -207,7 +213,7 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
 
     /**
      * Publishes one batch of the work that waits for when no outbox change is due: pending changes due for a retry,
-     * else republish marks, else reconcile's next submissions.
+     * else republish marks, else the first publication's next heads, else reconcile's next submissions.
      *
      * @return whether the batch did anything; false when nothing waits, or the feed is off
      */
@@ -216,7 +222,7 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
         if (!isOn()) {
             return false;
         }
-        return retryPending() > 0 || republish() > 0 || reconcileBatch();
+        return retryPending() > 0 || republish() > 0 || firstPublicationBatch() || reconcileBatch();
     }
 
     /**
@@ -307,6 +313,106 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
             }
             return true;
         }
+    }
+
+    /**
+     * Starts the first publication (an admin's, feed build step F4): every submission's head, in id order, in batches
+     * behind the live backlog, from the beginning. Where it stands; empty when one is under way already, which goes
+     * on.
+     *
+     * @throws IllegalStateException when the feed is off
+     */
+    Optional<FirstPublication.State> startFirstPublication() {
+        requireOn();
+        Optional<FirstPublication.State> started = Optional.ofNullable(afterBacklog.execute(status -> {
+            FeedLock.take(jdbc.getJdbcOperations());
+            return firstPublication.start(jdbc).orElse(null);
+        }));
+        if (started.isPresent()) {
+            log.info("The first publication starts: every submission's head, in batches of {}, behind the live backlog",
+                Math.max(1, properties.getBatchSize()));
+        }
+        return started;
+    }
+
+    /** Where the first publication stands; empty when none was ever started. */
+    Optional<FirstPublication.State> firstPublicationState() {
+        return firstPublication.read(jdbc);
+    }
+
+    /**
+     * Marks a scope's records for republication (an admin's, feed build step F4): the listed submissions when some
+     * are listed, else one form's, else every record the feed holds. The marks are written in batches behind the live
+     * backlog, each at the version the feed holds with new positions; a newer held version is skipped. How many marks
+     * it added.
+     *
+     * @throws IllegalStateException when the feed is off
+     */
+    int markForRepublication(String formId, List<String> submissionIds) {
+        requireOn();
+        int marked = inFeedTransaction(() -> republishMarks.mark(jdbc, formId, submissionIds));
+        log.info("Republication marked {} records ({})", marked, submissionIds != null && !submissionIds.isEmpty()
+            ? submissionIds.size() + " submissions listed" : formId != null ? "form " + formId : "every form");
+        return marked;
+    }
+
+    /** How many republish marks wait. */
+    long republishMarksWaiting() {
+        return republishMarks.waiting(jdbc);
+    }
+
+    private void requireOn() {
+        if (!isOn()) {
+            throw new IllegalStateException("The submission feed is off (activation switch submission-feed)");
+        }
+    }
+
+    /**
+     * Writes the first publication's next batch of heads, in id order from its mark, and moves the mark past them, in
+     * one transaction under the feed's lock: a restart repeats at most the batch it lost, and finds those heads held.
+     * A head that cannot be written is a pending change, retried as usual. Whether a first publication was under way.
+     */
+    private boolean firstPublicationBatch() {
+        if (firstPublication.read(jdbc).filter(FirstPublication.State::running).isEmpty()) {
+            return false;
+        }
+        int batchSize = Math.max(1, properties.getBatchSize());
+        FirstPublication.State[] after = new FirstPublication.State[1];
+        inFeedTransaction(() -> {
+            Optional<FirstPublication.State> open = firstPublication.read(jdbc).filter(FirstPublication.State::running);
+            if (open.isEmpty()) {
+                return 0;
+            }
+            List<StoredSubmissionJdbcReader.HeadVersion> page =
+                submissions.headVersionsAfter(open.get().mark(), batchSize);
+            List<String> heads = page.stream().filter(head -> head.version() != null)
+                .map(StoredSubmissionJdbcReader.HeadVersion::submissionId).toList();
+            long[] counts = new long[3];
+            int attempted = publishEach(heads, false, (submissionId, attempt) -> {
+                if (attempt.failure() != null) {
+                    counts[2]++;
+                    recordFailure(submissionId, attempt);
+                } else if (attempt.result().outcome() == FeedWriter.Outcome.PUBLISHED) {
+                    counts[0]++;
+                } else {
+                    counts[1]++;
+                }
+            });
+            boolean whole = attempted == heads.size();
+            String mark = !whole ? heads.get(attempted - 1)
+                : page.isEmpty() ? open.get().mark() : page.get(page.size() - 1).submissionId();
+            boolean finished = whole && page.size() < batchSize;
+            after[0] = firstPublication.advance(jdbc, mark, counts[0], counts[1], counts[2], finished);
+            if (finished && after[0].failed() == 0) {
+                freshness.firstPublicationCompleted(jdbc);
+            }
+            return 1;
+        });
+        if (after[0] != null && !after[0].running()) {
+            log.info("The first publication finished: {} heads written, {} held already, {} failed and waiting as "
+                + "pending changes", after[0].written(), after[0].skipped(), after[0].failed());
+        }
+        return true;
     }
 
     /** Retries the pending changes that are due, in one transaction under the feed's lock. */

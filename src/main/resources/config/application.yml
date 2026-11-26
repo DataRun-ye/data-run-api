@@ -50,6 +50,7 @@ management:
           - threaddump
           - caches
           - liquibase
+          - feedpublication
   endpoint:
     health:
       show-details: when_authorized

@@ -167,4 +167,26 @@ class FeedOpsMigrationIT {
                 SELECT count(*) FROM pg_namespace WHERE nspname IN ('feed', 'feed_ops')""", Long.class))
             .as("then the feed schema's own rollback drops both schemas").isZero();
     }
+
+    /** The first publication's mark (changeset d04): one row at most, and a rollback that drops only it. */
+    @Test
+    void theFirstPublicationsMarkHoldsOneRowAndRollsBack() throws Exception {
+        String firstPublication = "config/liquibase/changelog/feed/20261126-feed-first-publication.xml";
+        migrate();
+        liquibase(firstPublication, false);
+
+        assertThat(columns("first_publication")).containsExactly(
+            "failed bigint NO", "finished_at timestamp with time zone YES", "id boolean NO", "mark text NO",
+            "requested_at timestamp with time zone NO", "skipped bigint NO", "written bigint NO");
+        db.update("INSERT INTO feed_ops.first_publication (requested_at, mark) VALUES (now(), '')");
+        assertThatThrownBy(() -> db.update(
+            "INSERT INTO feed_ops.first_publication (id, requested_at, mark) VALUES (false, now(), '')"))
+            .as("one row at most").hasStackTraceContaining("ck_feed_ops_first_publication_one");
+
+        liquibase(firstPublication, true);
+        assertThat(db.queryForObject("SELECT to_regclass('feed_ops.first_publication') IS NULL", Boolean.class))
+            .isTrue();
+        assertThat(db.queryForObject("SELECT to_regclass('feed_ops.pending') IS NOT NULL", Boolean.class))
+            .as("the rest of feed_ops stays").isTrue();
+    }
 }

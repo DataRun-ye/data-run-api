@@ -14,7 +14,8 @@ import java.util.Map;
  * <p>A mark is removed only once its republication is written. A failed one keeps its mark, with the attempt counted,
  * the reason code and a wait that doubles from {@code datarun.feed.retry-delay} up to
  * {@code datarun.feed.max-retry-delay}: reconcile compares versions only, so it would never find a republication that
- * was owed. Marks are set by the admin's republication (feed build step F4).</p>
+ * was owed. Marks are set by an admin's republication of a scope (feed build step F4, {@link #mark}): the records the
+ * feed holds, of every form, of one form, or of listed submissions.</p>
  */
 final class RepublishMarks {
 
@@ -35,10 +36,49 @@ final class RepublishMarks {
         WHERE submission_id = :submissionId
         RETURNING attempts""";
 
+    /** A mark for each record the feed holds; a submission marked already keeps its mark. */
+    private static final String MARK_ALL = """
+        INSERT INTO feed_ops.republish (submission_id, marked_at)
+        SELECT f.id, now() FROM feed.submission f
+        ON CONFLICT (submission_id) DO NOTHING""";
+
+    private static final String MARK_FORM = """
+        INSERT INTO feed_ops.republish (submission_id, marked_at)
+        SELECT f.id, now() FROM feed.submission f WHERE f.form_id = :formId
+        ON CONFLICT (submission_id) DO NOTHING""";
+
+    private static final String MARK_LISTED = """
+        INSERT INTO feed_ops.republish (submission_id, marked_at)
+        SELECT f.id, now() FROM feed.submission f WHERE f.id IN (:submissionIds)
+        ON CONFLICT (submission_id) DO NOTHING""";
+
+    private static final String WAITING = "SELECT count(*) FROM feed_ops.republish";
+
     private final FeedPublisherProperties properties;
 
     RepublishMarks(FeedPublisherProperties properties) {
         this.properties = properties;
+    }
+
+    /**
+     * Marks a scope's records for republication: the listed submissions when some are listed, else one form's when a
+     * form is named, else every record. Only records the feed holds are marked (a head it lacks is reconcile's), and a
+     * submission marked already keeps its mark. How many marks it added.
+     */
+    int mark(NamedParameterJdbcTemplate jdbc, String formId, List<String> submissionIds) {
+        if (submissionIds != null && !submissionIds.isEmpty()) {
+            return jdbc.update(MARK_LISTED, Map.of("submissionIds", submissionIds));
+        }
+        if (formId != null) {
+            return jdbc.update(MARK_FORM, Map.of("formId", formId));
+        }
+        return jdbc.update(MARK_ALL, Map.of());
+    }
+
+    /** How many marks wait, due or not. */
+    long waiting(NamedParameterJdbcTemplate jdbc) {
+        Long waiting = jdbc.queryForObject(WAITING, Map.of(), Long.class);
+        return waiting == null ? 0 : waiting;
     }
 
     /** The submissions whose mark is due, at most {@code limit}. */

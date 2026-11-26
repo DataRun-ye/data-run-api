@@ -16,6 +16,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.FORM_ID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.MISSING_ASSIGNMENT_UID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.VERSION_2_UID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.document;
@@ -167,5 +168,52 @@ class RepublicationIT {
         assertThat(mark(republished.id())).as("the mark waits for the next batch").isNotEmpty();
         assertThat(publisher.runBatch()).isTrue();
         assertThat(mark(republished.id())).isEmpty();
+    }
+
+    /**
+     * An admin's republication of a form (feed build step F4): every record of the form is marked, and written again at
+     * the version the feed holds with new positions, behind the live backlog; a record whose held version is newer
+     * than its head is skipped, and its mark goes.
+     */
+    @Test
+    void anAdminsRepublicationOfAFormWritesItsRecordsAgainAndSkipsANewerHeldVersion() {
+        Ids first = fixture.create(document("first", 1, row("r1", "a")));
+        Ids newer = fixture.create(document("newer", 2));
+        drain();
+        fixture.execute("UPDATE feed.submission SET version = version + 1 WHERE id = :id", Map.of("id", newer.id()));
+        Map<String, Object> firstBefore = fixture.record(first);
+        Map<String, Object> newerBefore = fixture.record(newer);
+
+        assertThat(publisher.markForRepublication(FORM_ID, null)).isEqualTo(2);
+        assertThat(publisher.republishMarksWaiting()).isEqualTo(2);
+        while (publisher.runBatch()) {
+            // the marks are written
+        }
+
+        Map<String, Object> firstAfter = fixture.record(first);
+        assertThat(firstAfter).containsEntry("version", firstBefore.get("version"))
+            .containsEntry("field_values", firstBefore.get("field_values"));
+        assertThat((Long) firstAfter.get("position")).isGreaterThan((Long) firstBefore.get("position"));
+        assertThat(fixture.record(newer)).as("a newer held version is skipped").isEqualTo(newerBefore);
+        assertThat(publisher.republishMarksWaiting()).isZero();
+        assertThat(fixture.count("SELECT count(*) FROM outbox WHERE submission_id IN (:ids)",
+            Map.of("ids", List.of(first.id(), newer.id())))).as("no outbox row written").isEqualTo(2);
+    }
+
+    /** Listed submissions: only those are marked, and only records the feed holds. */
+    @Test
+    void anAdminsRepublicationOfListedSubmissionsMarksOnlyTheRecordsTheFeedHolds() {
+        Ids listed = fixture.create(document("listed", 1));
+        Ids other = fixture.create(document("other", 1));
+        drain();
+        Map<String, Object> otherBefore = fixture.record(other);
+
+        assertThat(publisher.markForRepublication(null, List.of(listed.id(), "01FDSUBNOTHELD0000000000"))).isEqualTo(1);
+        while (publisher.runBatch()) {
+            // the mark is written
+        }
+
+        assertThat(mark(listed.id())).isEmpty();
+        assertThat(fixture.record(other)).as("not listed").isEqualTo(otherBefore);
     }
 }

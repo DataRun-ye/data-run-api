@@ -120,6 +120,22 @@ final class Freshness {
                                                       excluded.first_publication_completed_at),
             checked_at = excluded.checked_at""";
 
+    private static final String FIRST_PUBLICATION_COMPLETED = """
+        INSERT INTO feed.freshness AS f (feed, backlog, pending, dead, checked_at, first_publication_completed_at)
+        VALUES ('submissions', 0, 0, 0, now(), now())
+        ON CONFLICT (feed) DO UPDATE SET
+            first_publication_completed_at = coalesce(f.first_publication_completed_at,
+                                                      excluded.first_publication_completed_at),
+            checked_at = excluded.checked_at""";
+
+    /**
+     * Records a first publication that wrote every head it passed: {@code first_publication_completed_at}, which stays
+     * from then on, whichever of it and reconcile sets it first.
+     */
+    void firstPublicationCompleted(NamedParameterJdbcTemplate jdbc) {
+        jdbc.update(FIRST_PUBLICATION_COMPLETED, Map.of());
+    }
+
     /**
      * Records a finished reconcile: how many submissions it found unpublished, and when. The first pass that wrote
      * every head it found unpublished sets {@code first_publication_completed_at}, which stays from then on.

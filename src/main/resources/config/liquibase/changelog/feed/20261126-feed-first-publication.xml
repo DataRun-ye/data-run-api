@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!--
+      The first publication's mark (feed build step F4, contract 11), in schema feed_ops, which downstream never reads
+      and nothing grants. Only the publisher writes it, under the feed's lock.
+
+      - first_publication: one row at most. An admin starts the first publication; the publisher then writes every
+        submission's head in batches, in id order, behind the live backlog, and keeps here the last submission id it
+        has passed (mark), so a restart goes on from there. written, skipped and failed count the heads it wrote, found
+        held already, and could not write (each failure is a pending change, retried as usual). finished_at is set
+        once it has passed the last submission; a new start is accepted only then, from the beginning.
+
+      Additive only: one table in an existing schema. Rollback drops it; a first publication under way is then started
+      again, and skips every head already held.
+    -->
+    <changeSet id="20261126-d04-feed-first-publication" author="datarun">
+        <sql>
+            CREATE TABLE feed_ops.first_publication (
+                id           boolean     NOT NULL DEFAULT true,
+                requested_at timestamptz NOT NULL,
+                mark         text        NOT NULL,
+                finished_at  timestamptz,
+                written      bigint      NOT NULL DEFAULT 0,
+                skipped      bigint      NOT NULL DEFAULT 0,
+                failed       bigint      NOT NULL DEFAULT 0,
+                CONSTRAINT pk_feed_ops_first_publication PRIMARY KEY (id),
+                CONSTRAINT ck_feed_ops_first_publication_one CHECK (id)
+            )
+        </sql>
+        <sql>
+            COMMENT ON TABLE feed_ops.first_publication IS 'The first publication: when an admin started it, the last submission id it has passed (its mark), its counts, and when it finished; one row at most.'
+        </sql>
+        <rollback>
+            <sql>DROP TABLE feed_ops.first_publication</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

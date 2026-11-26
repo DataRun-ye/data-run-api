@@ -145,11 +145,15 @@ _Avoid_: translation (in DataRun, label translations), translator
 A submission's newest revision in the journal.
 
 **First publication**:
-The server's write of every submission's head when the feed starts.
+The server's write of every submission's head when the feed starts. An admin starts it (`/management/feedpublication`);
+the publisher writes the heads in id order, in batches behind the live backlog, and keeps its mark, the last submission
+it has passed, so a restart goes on from there.
 _Avoid_: initial load (Airbyte's first read), backfill, snapshot
 
 **Republish**:
-Writing a scope's current records again: the same versions, new positions.
+Writing a scope's current records again: the same versions, new positions. An admin marks the scope (every form, one
+form, or listed submissions; `/management/feedpublication`), and the publisher writes the marks behind the live
+backlog, skipping a record whose held version is newer than its head.
 
 **Reconcile**:
 Finding and publishing every submission whose published version differs from its head: at start, at switch-on and
