@@ -5,12 +5,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.nmcpye.datarun.submission.normalized.FormDefinition;
 import org.nmcpye.datarun.submission.normalized.FormVersionDefinition;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -81,6 +83,13 @@ public class FormDefinitionJdbcReader {
          AS version_mark
         """ + VERSIONS;
 
+    /** A form's id and one of its versions' ids, by uid; a form's uid is unique. */
+    private static final String IDS = """
+        SELECT t.id AS form_id, v.id AS version_id
+        FROM data_template t
+        LEFT JOIN data_template_version v ON v.uid = :versionUid AND v.data_template_id = t.id
+        WHERE t.uid = :formUid""";
+
     private final NamedParameterJdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
 
@@ -96,6 +105,29 @@ public class FormDefinitionJdbcReader {
      * @param changeToken changes whenever a version or a data element it was built from changes
      */
     public record Snapshot(FormDefinition definition, String changeToken) {
+    }
+
+    /**
+     * The ids of a form and of one of its versions, by their uids.
+     *
+     * @param formId    the form's id, or {@code null} when its uid names no stored form
+     * @param versionId the version's id, or {@code null} when its uid names none of the form's versions
+     */
+    public record FormIds(String formId, String versionId) {
+    }
+
+    /**
+     * The ids of the form with this uid and of its version with that uid, read now, unlike the definitions a caller
+     * may keep: what a submission's record names its form and pinned version by.
+     *
+     * @param versionUid the version's uid, or {@code null}
+     */
+    public FormIds ids(String formUid, String versionUid) {
+        List<FormIds> found = jdbc.query(IDS, new MapSqlParameterSource()
+                .addValue("formUid", formUid, Types.VARCHAR)
+                .addValue("versionUid", versionUid, Types.VARCHAR),
+            (rs, n) -> new FormIds(rs.getString("form_id"), rs.getString("version_id")));
+        return found.isEmpty() ? new FormIds(null, null) : found.get(0);
     }
 
     /** The definition of the form with this uid (stored submissions name their form by uid), if it exists. */

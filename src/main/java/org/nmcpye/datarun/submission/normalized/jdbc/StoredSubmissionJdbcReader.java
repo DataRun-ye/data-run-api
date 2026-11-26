@@ -19,8 +19,9 @@ import java.util.Set;
 
 /**
  * Reads stored submissions at their head (their newest revision in the journal), by id or in batches, for the feed's
- * publisher, its reconcile and its agreement harness: the one read seam over {@code data_submission}, the journal and
- * the configuration tables they name, beside {@link FormDefinitionJdbcReader}. Read-only; it opens no transaction of
+ * publisher, its reconcile and its agreement harness: the one read seam over {@code data_submission} and the journal.
+ * The configuration tables they name are read by their own seams: the form by {@link FormDefinitionJdbcReader}, the
+ * placement by {@link PlacementJdbcResolver}. Read-only; it opens no transaction of
  * its own, so it reads in the caller's, through the template it is given.
  *
  * <p>A head is the revision's state ({@code form_data} as text, its version, its deleted flag, its pinned form version
@@ -30,7 +31,7 @@ import java.util.Set;
 @Component
 public class StoredSubmissionJdbcReader {
 
-    /** Each submission's newest revision, with the stored columns the revision leaves out and the form's ids. */
+    /** Each submission's newest revision, with the stored columns the revision leaves out. */
     private static final String HEADS = """
         SELECT s.id, s.template_uid AS form_uid, r.version, r.form_data::text AS form_data,
                r.metadata ->> 'template_version_uid' AS form_version_uid,
@@ -41,15 +42,13 @@ public class StoredSubmissionJdbcReader {
                s.created_date AT TIME ZONE 'UTC' AS created_at,
                s.start_entry_time AT TIME ZONE 'UTC' AS entered_start_at,
                s.finished_entry_time AT TIME ZONE 'UTC' AS entered_end_at,
-               t.id AS form_id, v.id AS form_version_id, r.metadata::text AS metadata
+               r.metadata::text AS metadata
         FROM data_submission s
         JOIN LATERAL (SELECT x.version, x.kind, x.recorded_at, x.form_data, x.metadata
                       FROM journal.submission_revision x
                       WHERE x.submission_id = s.id
                       ORDER BY x.version DESC
                       LIMIT 1) r ON true
-        LEFT JOIN data_template t ON t.uid = s.template_uid
-        LEFT JOIN data_template_version v ON v.uid = r.metadata ->> 'template_version_uid' AND v.data_template_id = t.id
         WHERE s.id IN (:ids)""";
 
     /** The stored submissions after a cursor, in id order, each with its form and its head's version. */
@@ -67,8 +66,6 @@ public class StoredSubmissionJdbcReader {
      * @param submission     what the submission normalizer reads: id, form uid, pinned version uid, document text
      * @param version        the head's version
      * @param deleted        whether the head is deleted
-     * @param formId         the form's id, or {@code null} when its uid names no stored form
-     * @param formVersionId  the pinned form version's id, or {@code null} when it is not among the form's versions
      * @param placement      what the head is tied to, as ids
      * @param createdAt      when the submission was stored
      * @param enteredStartAt the phone's start of filling the form, or {@code null}
@@ -79,8 +76,6 @@ public class StoredSubmissionJdbcReader {
         StoredSubmission submission,
         long version,
         boolean deleted,
-        String formId,
-        String formVersionId,
         Placement placement,
         OffsetDateTime createdAt,
         OffsetDateTime enteredStartAt,
@@ -123,9 +118,8 @@ public class StoredSubmissionJdbcReader {
         PlacementJdbcResolver placements = new PlacementJdbcResolver(jdbc);
         List<Head> heads = new ArrayList<>(reads.size());
         for (Read read : reads) {
-            heads.add(new Head(read.submission(), read.version(), read.deleted(), read.formId(), read.formVersionId(),
-                placements.ofRevision(read.metadata()), read.createdAt(), read.enteredStartAt(), read.enteredEndAt(),
-                read.changedAt()));
+            heads.add(new Head(read.submission(), read.version(), read.deleted(), placements.ofRevision(read.metadata()),
+                read.createdAt(), read.enteredStartAt(), read.enteredEndAt(), read.changedAt()));
         }
         return heads;
     }
@@ -135,8 +129,6 @@ public class StoredSubmissionJdbcReader {
         StoredSubmission submission,
         long version,
         boolean deleted,
-        String formId,
-        String formVersionId,
         JsonNode metadata,
         OffsetDateTime createdAt,
         OffsetDateTime enteredStartAt,
@@ -167,8 +159,6 @@ public class StoredSubmissionJdbcReader {
                 rs.getString("form_data")),
             rs.getLong("version"),
             rs.getBoolean("deleted"),
-            rs.getString("form_id"),
-            rs.getString("form_version_id"),
             metadata,
             rs.getObject("created_at", OffsetDateTime.class),
             rs.getObject("entered_start_at", OffsetDateTime.class),

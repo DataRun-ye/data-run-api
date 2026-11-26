@@ -169,6 +169,18 @@ class FormDefinitionJdbcReaderIT {
         assertThat(normalized.flags()).containsOnlyKeys(NormalizationFlag.FIELD_WITHOUT_ID);
     }
 
+    /** What a submission's record names its form and pinned version by: their ids, read by uid. */
+    @Test
+    void aFormsIdAndOneOfItsVersionsIdsAreReadByTheirUids() {
+        assertThat(reader.ids(FORM_UID, "nzFormVer02"))
+            .isEqualTo(new FormDefinitionJdbcReader.FormIds(FORM_ID, "01JS1FV0000000000000000002"));
+        assertThat(reader.ids(FORM_UID, "nzNoSuchVer")).as("a version the form does not have")
+            .isEqualTo(new FormDefinitionJdbcReader.FormIds(FORM_ID, null));
+        assertThat(reader.ids(FORM_UID, null)).isEqualTo(new FormDefinitionJdbcReader.FormIds(FORM_ID, null));
+        assertThat(reader.ids("nzNoSuchFrm", "nzFormVer02")).as("a form that is not stored")
+            .isEqualTo(new FormDefinitionJdbcReader.FormIds(null, null));
+    }
+
     @Test
     void severalFormsAreReadTogetherAndUnknownOnesAreAbsent() {
         assertThat(reader.read(Set.of(FORM_UID, "nzNoSuchFrm"))).containsOnlyKeys(FORM_UID);

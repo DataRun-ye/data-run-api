@@ -226,16 +226,17 @@ final class FeedWriter {
             jdbc.update(RESOLVE, pending);
             return new Result(Outcome.SKIPPED, head.version(), Map.of());
         }
-        if (head.formId() == null) {
+        StoredSubmission stored = head.submission();
+        FormDefinitionJdbcReader forms = new FormDefinitionJdbcReader(jdbc, objectMapper);
+        FormDefinitionJdbcReader.FormIds formIds = forms.ids(stored.formUid(), stored.formVersionUid());
+        if (formIds.formId() == null) {
             throw new FeedFailure(FeedFailure.FORM_UNRESOLVED);
         }
         Placement placement = head.placement();
         if (!placement.complete()) {
             throw new FeedFailure(FeedFailure.PLACEMENT_UNRESOLVED);
         }
-        StoredSubmission stored = head.submission();
-        FormDefinition form = definitions.forHead(new FormDefinitionJdbcReader(jdbc, objectMapper), stored.formUid(),
-            stored.formVersionUid());
+        FormDefinition form = definitions.forHead(forms, stored.formUid(), stored.formVersionUid());
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(stored, form);
 
         jdbc.queryForObject(WRITE_RECORDS, new MapSqlParameterSource()
@@ -247,8 +248,8 @@ final class FeedWriter {
             .addValue("enteredStartAt", head.enteredStartAt(), Types.TIMESTAMP_WITH_TIMEZONE)
             .addValue("enteredEndAt", head.enteredEndAt(), Types.TIMESTAMP_WITH_TIMEZONE)
             .addValue("changedAt", head.changedAt(), Types.TIMESTAMP_WITH_TIMEZONE)
-            .addValue("formId", head.formId())
-            .addValue("formVersionId", head.formVersionId(), Types.VARCHAR)
+            .addValue("formId", formIds.formId())
+            .addValue("formVersionId", formIds.versionId(), Types.VARCHAR)
             .addValue("assignmentId", placement.assignmentId())
             .addValue("teamId", placement.teamId())
             .addValue("orgUnitId", placement.orgUnitId())
