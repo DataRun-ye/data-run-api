@@ -137,6 +137,22 @@ Known and unguarded: [`CacheConfiguration.java:139`](../../src/main/java/org/nmc
 `RefTypeValueResolutionService.REF_RESOLUTION_CACHE_NAME`, a constant the compiler inlines, so no rule sees this use
 of `etl`.
 
+Uids in new code and `outbox.processing` (owner, 2026-11-26: new work keys by ids, and the 11-character uid is an
+alias for installed phones only). An edge adapter turns the stored uids into ids; a breach keys by uid today.
+
+| Class | Members | Kind | Why |
+| --- | --- | --- | --- |
+| `PlacementJdbcResolver.StoredPlacement` | `assignmentUid`, `teamUid`, `orgUnitUid`, `activityUid` | edge | the placement uids a revision stores, which the resolver turns into ids |
+| `FormDefinitionJdbcReader` | `ids(formUid, versionUid)` | edge | turns the form and version uids a stored submission names into ids |
+| `FormVersionDefinition` | `parse(fieldIdForUid, optionSetIdForUid)` | edge | turn the data element and option set uids a template's fields name into ids |
+| `StoredSubmission` | `formUid`, `formVersionUid` | breach | the stored form and pinned version reach the normalizer as uids, though the reader can resolve their ids |
+| `FormVersionDefinition` | `uid`, `parse(uid)` | breach | a version is known by its uid, to match the stored pin |
+| `FormDefinition` | `versionsByUid`, `resolutionsByVersionUid`, `versionByUid(uid)` | breach | versions are looked up by uid |
+| `FormDefinitionJdbcReader` | `read(formUid)`, `read(formUids)`, `changeTokens(formUids)`, SQL `form_uid`, `version_uid` | breach | definitions and change tokens are keyed by form uid, and versions by uid |
+| `StoredSubmissionJdbcReader` | SQL `template_uid`, `form_uid`, `template_version_uid`, `form_version_uid`; `HeadVersion.formUid` | breach | hands the stored form and version uids on untranslated |
+| `FormDefinitions` (the feed) | `forHead(formUid, pinnedVersionUid)` | breach | the feed keeps form definitions by form uid |
+| `SubmissionRevisionReader` | SQL `assignment_uid`, `template_version_uid` | breach | conflict detection compares the journal's assignment and form version by uid |
+
 ## Gaps
 
 Submission review (`docs/features/submission-review/spec.md`) needs these; the feed built parts of 1 and 4, the rest is not built.

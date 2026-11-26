@@ -52,9 +52,15 @@ import org.nmcpye.datarun.web.rest.v1.PivotController;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +73,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.belongToAnyOf;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -93,6 +100,8 @@ import static org.nmcpye.datarun.NewCodeSeamsTest.Kind.TRANSITIONAL;
  *   <li>(c) Client contracts: new code never depends on v1 resources, their DTOs, mappers or v1 error codes.</li>
  *   <li>SQL text in new code, which ArchUnit cannot see, is scanned as a tripwire, not proof: it names no retiring
  *       or transitional relation, and system-of-record tables only in the seam that owns the read.</li>
+ *   <li>(G2) No uid in new code or the outputs' seam: no call of an old class's uid accessor, no field, record
+ *       component or parameter named for a uid, no SQL column ending in {@code _uid}, beyond {@link #UID_USES}.</li>
  * </ul>
  */
 class NewCodeSeamsTest {
@@ -309,6 +318,53 @@ class NewCodeSeamsTest {
         new SqlSeam("org/nmcpye/datarun/jpa/datasubmission/revision/", Set.of("data_submission"), BUILT,
             "the journal copies the stored row it records"));
 
+    private static final String NORMALIZED = ROOT + ".submission.normalized.";
+
+    /**
+     * (G2) The uids new code still holds. New work keys by ids, and the 11-character uid is an alias for installed
+     * phones only (owner, 2026-11-26). Each use names its class (a nested class by its own name) and the member: a
+     * field or record component by name, a parameter as {@code method(name)} ({@code new(name)} for a constructor), a
+     * call as {@code calls Type.method}, an SQL column as {@code sql column}. An {@code EDGE} use is an adapter that
+     * turns stored uids into ids; a {@code BREACH} keys by uid today and goes when that code changes. Each must still
+     * occur, so the list only shrinks.
+     */
+    static final List<UidUse> UID_USES = uses(
+        // Edge adapters: stored references are uids, written for phones; these turn them into ids.
+        edge(NORMALIZED + "jdbc.PlacementJdbcResolver$StoredPlacement",
+            "the placement uids a revision stores, which the resolver turns into ids",
+            "assignmentUid", "teamUid", "orgUnitUid", "activityUid"),
+        edge(NORMALIZED + "jdbc.FormDefinitionJdbcReader",
+            "turns the form and version uids a stored submission names into ids",
+            "ids(formUid)", "ids(versionUid)"),
+        edge(NORMALIZED + "FormVersionDefinition",
+            "turn the data element and option set uids a template's fields name into ids",
+            "parse(fieldIdForUid)", "parse(optionSetIdForUid)"),
+        // Breaches: new code that keys by uid today.
+        breach(NORMALIZED + "StoredSubmission",
+            "the stored form and pinned version reach the normalizer as uids, though the reader can resolve their ids",
+            "formUid", "formVersionUid"),
+        breach(NORMALIZED + "FormVersionDefinition",
+            "a version is known by its uid, to match the stored pin",
+            "uid", "parse(uid)"),
+        breach(NORMALIZED + "FormDefinition",
+            "versions are looked up by uid",
+            "versionsByUid", "resolutionsByVersionUid", "versionByUid(uid)"),
+        breach(NORMALIZED + "jdbc.FormDefinitionJdbcReader",
+            "definitions and change tokens are keyed by form uid, and versions by uid",
+            "read(formUid)", "read(formUids)", "changeTokens(formUids)", "sql form_uid", "sql version_uid"),
+        breach(NORMALIZED + "jdbc.StoredSubmissionJdbcReader",
+            "hands the stored form and version uids on untranslated",
+            "sql template_uid", "sql form_uid", "sql template_version_uid", "sql form_version_uid"),
+        breach(NORMALIZED + "jdbc.StoredSubmissionJdbcReader$HeadVersion",
+            "hands the stored form uid on untranslated",
+            "formUid"),
+        breach(ROOT + ".submission.feed.publisher.FormDefinitions",
+            "the feed keeps form definitions by form uid",
+            "forHead(formUid)", "forHead(pinnedVersionUid)"),
+        breach(ROOT + ".jpa.datasubmission.revision.SubmissionRevisionReader",
+            "conflict detection compares the journal's assignment and form version by uid",
+            "sql assignment_uid", "sql template_version_uid"));
+
     // =================================================================================================================
     // 3. The rules, built from their predicates so that the fixtures below can show each failing
     // =================================================================================================================
@@ -383,6 +439,96 @@ class NewCodeSeamsTest {
         return findings.stream().distinct().toList();
     }
 
+    /** (G2) Where uids may not appear: new code, and the outputs' seam. */
+    static final DescribedPredicate<JavaClass> UID_FREE = ofKind(NEW_CODE)
+        .or(resideInAPackage(ROOT + ".outbox.processing..")).as("new code and outbox.processing");
+
+    /** (G2) Calls from these classes of an old class's uid accessor ({@code getUid}, {@code uid}). */
+    static List<UidFinding> uidAccessorCalls(Collection<JavaClass> classes) {
+        return classes.stream()
+            .flatMap(c -> Stream.concat(c.getMethodCallsFromSelf().stream(), c.getMethodReferencesFromSelf().stream()))
+            .filter(access -> access.getName().equals("getUid") || access.getName().equals("uid"))
+            .filter(access -> kindOf(access.getTargetOwner()).isPresent() && !UID_FREE.test(access.getTargetOwner()))
+            .map(access -> new UidFinding(access.getOriginOwner().getName(),
+                "calls " + access.getTargetOwner().getSimpleName() + "." + access.getName()))
+            .distinct().toList();
+    }
+
+    /**
+     * (G2) Fields, record components and parameters of these classes whose names carry a uid. A constructor's parameter
+     * named as a field of its class (a record's, or one generated for its fields) counts as that field. Lambdas and
+     * other synthetic members are left out. Parameter names need the compiler's {@code -parameters}, which the build
+     * sets; a missing name is itself a finding.
+     */
+    static List<UidFinding> uidNames(Collection<JavaClass> classes) {
+        List<UidFinding> findings = new ArrayList<>();
+        for (JavaClass javaClass : classes) {
+            Class<?> type = loaded(javaClass.getName());
+            Set<String> fields = new java.util.HashSet<>();
+            for (Field field : type.getDeclaredFields()) {
+                if (!field.isSynthetic()) {
+                    fields.add(field.getName());
+                    if (UID_NAME.matcher(field.getName()).matches()) {
+                        findings.add(new UidFinding(type.getName(), field.getName()));
+                    }
+                }
+            }
+            List<Executable> executables = new ArrayList<>(List.of(type.getDeclaredConstructors()));
+            executables.addAll(List.of(type.getDeclaredMethods()));
+            for (Executable executable : executables) {
+                if (executable.isSynthetic() || executable instanceof Method method && method.isBridge()) {
+                    continue;
+                }
+                String name = executable instanceof Constructor<?> ? "new" : executable.getName();
+                for (Parameter parameter : executable.getParameters()) {
+                    if (parameter.isImplicit() || parameter.isSynthetic()) {
+                        continue;
+                    }
+                    if (!parameter.isNamePresent()) {
+                        findings.add(new UidFinding(type.getName(), name + ": no parameter names (compile with "
+                            + "-parameters)"));
+                    } else if (UID_NAME.matcher(parameter.getName()).matches()
+                        && !(executable instanceof Constructor<?> && fields.contains(parameter.getName()))) {
+                        findings.add(new UidFinding(type.getName(), name + "(" + parameter.getName() + ")"));
+                    }
+                }
+            }
+        }
+        return findings.stream().distinct().toList();
+    }
+
+    /** (G2) SQL columns ending in {@code _uid} that a source reads, in its literals that look like SQL. */
+    static List<UidFinding> uidColumns(String path, String source) {
+        String owner = path.substring(0, path.length() - ".java".length()).replace('/', '.');
+        List<UidFinding> findings = new ArrayList<>();
+        for (String literal : JavaLiterals.strings(source)) {
+            if (SQL_LIKE.matcher(literal).find()) {
+                Matcher column = UID_COLUMN.matcher(literal);
+                while (column.find()) {
+                    findings.add(new UidFinding(owner, "sql " + column.group()));
+                }
+            }
+        }
+        return findings.stream().distinct().toList();
+    }
+
+    /** (G2) Every uid new code and the outputs' seam hold, listed or not. */
+    static List<UidFinding> uidFindings() throws IOException {
+        List<JavaClass> uidFree = MAIN.stream().filter(UID_FREE::test).toList();
+        List<UidFinding> findings = new ArrayList<>(uidAccessorCalls(uidFree));
+        findings.addAll(uidNames(uidFree));
+        Path sources = Path.of("src", "main", "java");
+        try (Stream<Path> files = Files.walk(sources)) {
+            for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
+                String path = sources.relativize(file).toString().replace('\\', '/');
+                if (UID_FREE.test(sourceClass(path))) {
+                    findings.addAll(uidColumns(path, Files.readString(file)));
+                }
+            }
+        }
+        return findings.stream().distinct().toList();
+    }
+
     // The tests: the rules on the main classes.
 
     @Test
@@ -428,6 +574,15 @@ class NewCodeSeamsTest {
         assertThat(findings).as("SQL text in new code naming a retiring or transitional relation, or a "
             + "system-of-record table outside its seam (a tripwire, not proof: SQL built at run time is not seen)")
             .isEmpty();
+    }
+
+    @Test
+    void newCodeHoldsNoUidBeyondTheListedUses() throws IOException {
+        List<String> unlisted = uidFindings().stream()
+            .filter(finding -> UID_USES.stream().noneMatch(use -> use.covers(finding)))
+            .map(UidFinding::toString).sorted().toList();
+        assertThat(unlisted).as("uids in new code or outbox.processing that UID_USES does not list: key by id, or "
+            + "list an edge adapter or a breach with its reason (G2)").isEmpty();
     }
 
     // The tests: the table and the allowlist.
@@ -498,6 +653,19 @@ class NewCodeSeamsTest {
             assertThat(occurs(breach.origin(), breach.dependency()))
                 .as(breach.origin() + " no longer depends on " + breach.dependency() + ": remove the breach")
                 .isTrue();
+        }
+    }
+
+    /** A listed uid use still occurs, with a reason; edge uses and breaches alike leave the list once they go. */
+    @Test
+    void everyListedUidUseStillOccurs() throws IOException {
+        List<UidFinding> findings = uidFindings();
+        assertThat(UID_USES.stream().map(use -> use.owner() + " " + use.member()).distinct().count())
+            .as("uid uses listed twice").isEqualTo(UID_USES.size());
+        for (UidUse use : UID_USES) {
+            assertThat(use.why()).as(use.owner() + " " + use.member()).isNotBlank();
+            assertThat(findings.stream().anyMatch(use::covers))
+                .as(use.owner() + " " + use.member() + " no longer occurs: remove it").isTrue();
         }
     }
 
@@ -623,7 +791,33 @@ class NewCodeSeamsTest {
                 "org/nmcpye/datarun/submission/feed/X.java: system-of-record table team outside its seam");
     }
 
+    /** (G2) Each uid check fails on a plant: an old class's uid accessor, a uid-named field and parameter, a column. */
+    @Test
+    void theUidChecksCatchAPlant() {
+        JavaClass plant = new ClassFileImporter().importClasses(UidLeak.class).get(UidLeak.class);
+        assertThat(uidAccessorCalls(List.of(plant))).extracting(UidFinding::member)
+            .containsExactly("calls DataSubmission.getUid");
+        assertThat(uidNames(List.of(plant))).extracting(UidFinding::member)
+            .containsExactlyInAnyOrder("formUid", "find(assignmentUid)");
+        assertThat(uidColumns("org/nmcpye/datarun/submission/feed/X.java",
+            "String head = \"SELECT s.id, s.template_uid FROM data_submission s WHERE s.id = :id\";"))
+            .extracting(UidFinding::member).containsExactly("sql template_uid");
+        assertThat(uidColumns("org/nmcpye/datarun/submission/feed/X.java",
+            "log.info(\"Submission {} has no template_uid\", id);"))
+            .as("prose naming a column").isEmpty();
+    }
+
     // Fixtures for the tests above.
+
+    /** Stands for new code holding a uid: one of each kind. */
+    @SuppressWarnings("unused")
+    static final class UidLeak {
+        String formUid;
+
+        String find(String assignmentUid, DataSubmission stored) {
+            return stored.getUid();
+        }
+    }
 
     /** Stands for new code: one leak of each kind, and one use of each seam it may use. */
     @SuppressWarnings("unused")
@@ -653,6 +847,53 @@ class NewCodeSeamsTest {
     }
 
     // The table's and the allowlist's mechanics.
+
+    /** (G2) A uid in new code, by its class and member. */
+    record UidFinding(String owner, String member) {
+
+        @Override
+        public String toString() {
+            return owner + " " + member;
+        }
+    }
+
+    /** (G2) Whether a listed uid use is an edge adapter's translation or a breach. */
+    enum UidVerdict { EDGE, BREACH }
+
+    /** (G2) A listed uid use: its class, member, verdict and why. */
+    record UidUse(String owner, String member, UidVerdict verdict, String why) {
+
+        boolean covers(UidFinding finding) {
+            return finding.owner().equals(owner) && finding.member().equals(member);
+        }
+    }
+
+    private static List<UidUse> edge(String owner, String why, String... members) {
+        return Stream.of(members).map(member -> new UidUse(owner, member, UidVerdict.EDGE, why)).toList();
+    }
+
+    private static List<UidUse> breach(String owner, String why, String... members) {
+        return Stream.of(members).map(member -> new UidUse(owner, member, UidVerdict.BREACH, why)).toList();
+    }
+
+    @SafeVarargs
+    private static List<UidUse> uses(List<UidUse>... groups) {
+        return Stream.of(groups).flatMap(List::stream).toList();
+    }
+
+    /** (G2) A name that carries a uid: uid or uids, or one ending in Uid or Uids. */
+    private static final Pattern UID_NAME = Pattern.compile("uids?|.*Uids?");
+    /** (G2) An SQL column, or a JSON key read in SQL, that carries a uid. */
+    private static final Pattern UID_COLUMN = Pattern.compile("(?i)\\b\\w+_uid\\b");
+
+    /** A main or test class, loaded without running its initializers. */
+    private static Class<?> loaded(String name) {
+        try {
+            return Class.forName(name, false, NewCodeSeamsTest.class.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException(name + " is not on the test classpath", e);
+        }
+    }
 
     /** A row of the classification: a package pattern or a class name, its kind, and why. */
     record Row(String target, boolean isClass, Kind kind, String why) {
