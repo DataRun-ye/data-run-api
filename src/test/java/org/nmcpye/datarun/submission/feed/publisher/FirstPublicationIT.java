@@ -26,7 +26,8 @@ import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.document;
 /**
  * The first publication (contract 11, feed build step F4): an admin starts it, and the publisher writes every
  * submission's head in id order, a batch at a time (five here), moving its mark past each batch in the batch's own
- * transaction. A restart goes on from the mark, and nothing writes an outbox row. Values are invented.
+ * transaction. A restart goes on from the mark, and nothing writes an outbox row. Once it has completed, reconcile
+ * repairs what the feed lacks. Values are invented.
  */
 @FeedPublisherIntegrationTest
 class FirstPublicationIT {
@@ -137,5 +138,37 @@ class FirstPublicationIT {
             // the second pass finds every head held
         }
         assertThat(restarted.firstPublicationState().orElseThrow().written()).as("it writes nothing again").isZero();
+    }
+
+    /**
+     * Once the first publication has completed, reconcile repairs the feed (engineering, 2026-11-26): a head the feed
+     * has lost, its record removed here, is published again at the next pass.
+     */
+    @Test
+    void onceTheFirstPublicationHasCompletedReconcileRepairsAHeadTheFeedLacks() {
+        List<Ids> heads = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            heads.add(fixture.create(document("first " + i, i)));
+        }
+        assertThat(publisher.startFirstPublication()).isPresent();
+        while (publisher.runBatch()) {
+            // the first publication, to its end
+        }
+        assertThat(publisher.firstPublicationState().orElseThrow().failed())
+            .as("every head in the database written (another test may have left one the feed cannot publish)")
+            .isZero();
+        assertThat(fixture.firstPublicationIsComplete()).isTrue();
+
+        Ids lost = heads.get(3);
+        fixture.execute("DELETE FROM feed.submission_row WHERE submission_id = :id", Map.of("id", lost.id()));
+        fixture.execute("DELETE FROM feed.submission WHERE id = :id", Map.of("id", lost.id()));
+        publisher.reconcileNightly();
+        while (publisher.runBatch()) {
+            // the pass
+        }
+
+        assertThat(fixture.record(lost)).as("published again").containsEntry("version", fixture.head(lost));
+        assertThat(fixture.count("SELECT unpublished FROM feed.freshness WHERE feed = 'submissions'", Map.of()))
+            .as("the one head the pass found the feed lacking").isEqualTo(1);
     }
 }

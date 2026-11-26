@@ -146,9 +146,10 @@ _Avoid_: translation (in DataRun, label translations), translator
 A submission's newest revision in the journal.
 
 **First publication**:
-The server's write of every submission's head when the feed starts. An admin starts it (`/management/feedpublication`);
-the publisher writes the heads in id order, in batches behind the live backlog, and keeps its mark, the last submission
-it has passed, so a restart goes on from there.
+The server's write of every submission's head when the feed starts. An admin starts it at a chosen hour once the feed
+is switched on (`/management/feedpublication`); the publisher writes the heads in id order, in batches behind the live
+backlog, and keeps its mark, the last submission it has passed, so a restart goes on from there. Once it has written
+every head it passed, it sets `first_publication_completed_at`, and reconcile repairs the feed from then on.
 _Avoid_: initial load (Airbyte's first read), backfill, snapshot
 
 **Republish**:
@@ -158,7 +159,8 @@ backlog, skipping a record whose held version is newer than its head.
 
 **Reconcile**:
 Finding and publishing every submission whose published version differs from its head: at start, at switch-on and
-nightly. Not an activity's reconciliation form.
+nightly. It repairs after the first publication, never in its place: until the first publication has completed, it
+publishes none the feed lacks and counts them in `unpublished`. Not an activity's reconciliation form.
 
 **Refresh**:
 Downstream's re-read of a stream in Airbyte ("Refresh and Retain Records").

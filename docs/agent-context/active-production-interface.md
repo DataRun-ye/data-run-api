@@ -563,12 +563,13 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   `failure` or `dead`.
 - **The feed's admin route.** `/management/feedpublication` starts the feed's
   first publication and republishes a scope. Both are operational steps, run
-  on the owner's go: the first publication at switch-on (phase B of the feed's
-  rollout), a republication after a fix. The admin's v1 tools do not call it.
-  Only an admin reaches it, as every management route but health and info
-  (exposed in application.yml), and both are refused (409) while the feed is
-  off. `GET` shows where the first publication stands and how many republish
-  marks wait. `POST {"action": "first-publication"}` starts the first
+  on the owner's go: the first publication at a chosen hour once the feed is
+  switched on (phase B of the feed's rollout), a republication after a fix.
+  The admin's v1 tools do not call it. Only an admin reaches it, as every
+  management route but health and info (exposed in application.yml), and both
+  are refused (409) while the feed is off. `GET` shows where the first
+  publication stands and how many republish marks wait.
+  `POST {"action": "first-publication"}` starts the first
   publication: every submission's head, in id order, in batches of
   `datarun.feed.batch-size` (200 by default) behind the live backlog. It is
   resumable: its mark, in `feed_ops.first_publication`, lets a restart go on
@@ -577,12 +578,17 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   (comma-separated) or neither for every form, marks the records the feed holds
   in that scope; each is written again at its held version with new positions,
   skipping a record whose held version is newer than its head. Neither writes
-  an outbox row. Switching the feed on also starts reconcile, which publishes
-  every head the feed lacks, so writing every submission begins at switch-on
-  itself. A first publication started then goes before reconcile, in id order,
-  skipping the heads already held, and reconcile goes on once it ends. The
-  first of the two to finish with every head written sets
-  `first_publication_completed_at` in `feed.freshness`.
+  an outbox row. The first publication writes every head, and reconcile
+  repairs after it, never in its place (engineering, 2026-11-26). Until the
+  first publication has completed, reconcile publishes no head the feed lacks
+  and counts them in `unpublished`, so switching the feed on publishes only the
+  live changes and the records the feed holds at another version. Only a first
+  publication that wrote every head it passed sets
+  `first_publication_completed_at` in `feed.freshness`. One that ends with
+  failures leaves them as pending changes; start it again once their cause is
+  fixed, and it skips the heads already held. From then on reconcile publishes
+  every head the feed lacks or holds at another version, at start, at switch-on
+  and nightly.
 - **Dead rows.** A dead row is not claimed again. Put one back only after its
   cause is fixed, and reset its attempts, or the next claim marks it dead again:
   `UPDATE outbox SET status = 'pending', attempt = 0, next_attempt_at = NULL

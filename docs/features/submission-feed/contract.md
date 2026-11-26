@@ -174,10 +174,10 @@ One record, key `feed` = `submissions`, read with a full refresh at every sync.
 | `oldest_unpublished_at` | timestamptz | yes | When the oldest change in `backlog` was recorded; null when none |
 | `pending` | bigint | no | Changes whose feed part failed and wait for a retry; 0 when none |
 | `oldest_pending_at` | timestamptz | yes | When the oldest pending change first failed; null when none |
-| `dead` | bigint | no | The feed's own changes given up on: pending changes past the attempt cap, each kept with its reason code; 0 when none. Reconcile still publishes their submissions once the cause is fixed |
-| `unpublished` | bigint | yes | Submissions whose published version differed from the journal's head at the last reconcile; null until the first reconcile |
+| `dead` | bigint | no | The feed's own changes given up on: pending changes past the attempt cap, each kept with its reason code; 0 when none. Reconcile still publishes their submissions once the cause is fixed; before the first publication has completed, only those the feed holds |
+| `unpublished` | bigint | yes | Submissions whose published version differed from the journal's head at the last reconcile; null until the first reconcile. Until the first publication has completed, they include every submission the feed lacks, which reconcile leaves to it |
 | `last_reconciled_at` | timestamptz | yes | When reconcile last ran; null until then |
-| `first_publication_completed_at` | timestamptz | yes | Null until the first publication has written every submission; models built earlier are partial |
+| `first_publication_completed_at` | timestamptz | yes | Null until the first publication has written every submission; models built earlier are partial. Only the first publication sets it, and only from then on does reconcile publish the submissions the feed lacks |
 | `checked_at` | timestamptz | no | When the publisher last wrote this record, also when idle |
 
 Normalization flag counts are not in `freshness`; they are server monitoring (§4).
@@ -201,13 +201,16 @@ Normalization flag counts are not in `freshness`; they are server monitoring (§
 4. **Nothing stays unpublished.** The feed's writes share the ETL's per-row transaction, inside a savepoint: a feed
    failure rolls back only the feed part, tall and events still commit, and the submission waits in a retry list; a
    tall or events failure never holds back the feed, which commits whatever they do. Retries are capped; past the cap the change is marked dead with its reason code, counted in `freshness` and by
-   integrity check 12, and the heartbeat stops (§12). Reconcile publishes every head the feed lacks or holds at another
-   version: at start, at switch-on and nightly. That covers periods with the feed off, a rollback to a release without
-   it, dead outbox rows and anything else. **Integrity check 12** holds the feed to this. Its publication lines must
-   read 0: a journal head not published at its version once the backlog is 0; a feed record without its submission;
-   a live row of a deleted submission; a position used twice; a submission whose row records differ from its head;
-   a pending change older than the freshness target; a dead change. The backlog and the normalization flag counts
-   are reported for reference only.
+   integrity check 12, and the heartbeat stops (§12). The first publication writes every head, and reconcile repairs
+   after it, never in its place (engineering, 2026-11-26). Once the first publication has completed, reconcile
+   publishes every head the feed lacks or holds at another version: at start, at switch-on and nightly. That covers
+   periods with the feed off, a rollback to a release without it, dead outbox rows and anything else. Before then,
+   reconcile publishes no head the feed lacks: it counts them in `unpublished`, and still publishes the heads the feed
+   holds at another version. **Integrity check 12** holds the feed to this. Its publication lines must read 0: a
+   journal head not published at its version once the backlog is 0 (above 0 until the first publication has
+   completed); a feed record without its submission; a live row of a deleted submission; a position used twice; a
+   submission whose row records differ from its head; a pending change older than the freshness target; a dead change.
+   The backlog and the normalization flag counts are reported for reference only.
 5. **A split lands at once.** Submission review writes a split as one transaction with two revisions that name each
    other. When the publisher reaches either revision, it writes both submissions' heads in one feed transaction; the
    partner's own outbox row then finds its version held and is skipped. Because of the feed, no consumer sees the moved
@@ -348,10 +351,13 @@ A repeating section's wide table reads `submission_row` filtered by `section_id`
 **When:** after the revision journal (6.5.6) is in production and the submission normalizer is merged, with the
 feed's release rehearsed. Timing follows engineering readiness, not a campaign date (owner, 2026-11-25).
 
-- **Server:** deploy with the feed switched off. At a quiet hour, switch it on: reconcile runs, then the first
-  publication writes every submission (about half an hour of CPU and 3 GB of WAL per million submissions); the
-  publication lines of integrity check 12 read 0; `first_publication_completed_at` is set. From then on the ETL
-  writes tall, events and the feed for every change. The feed costs about 4.4 KB of WAL per change.
+- **Server:** deploy with the feed switched off, then switch it on. From then on the ETL writes tall, events and the
+  feed for every change, and reconcile counts the submissions the feed lacks in `unpublished` without publishing them.
+  At a quiet hour, on the owner's go, an operator starts the first publication (`/management/feedpublication`): it
+  writes every submission's head in batches behind the live backlog, resumable from its mark (about half an hour of
+  CPU and 3 GB of WAL per million submissions). Once it has written every head, `first_publication_completed_at` is
+  set, the publication lines of integrity check 12 read 0, and from then on reconcile repairs the feed. The feed costs
+  about 4.4 KB of WAL per change.
 - **Downstream:** add `feed` to the source's schemas, refresh the schema, and enable the five streams (§13); run the
   first sync with the feed paused, then check counts. New models are built on the feed. Feed versions of existing
   models are built beside the old ones and compared through the server's comparison queries.
@@ -403,3 +409,6 @@ values per field through the crosswalk; the first-time values of §14, counted o
 ## Revisions
 
 - 2026-11-26: freshness counts only the feed's own state.
+- 2026-11-26: reconcile repairs after the first publication, never in its place. Until the first publication has
+  completed, reconcile publishes no submission the feed lacks and counts them in `unpublished`; only the first
+  publication sets `first_publication_completed_at` (engineering).

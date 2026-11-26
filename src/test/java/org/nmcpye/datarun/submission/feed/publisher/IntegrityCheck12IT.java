@@ -77,9 +77,13 @@ class IntegrityCheck12IT {
         }
     }
 
-    /** Publishes every head in the database: the live changes, then a reconcile pass and the retries it leaves. */
+    /**
+     * Publishes every head in the database: the live changes, then a reconcile pass, as after the first publication,
+     * and the retries it leaves.
+     */
     private void publishEverything() {
         drain();
+        fixture.firstPublicationCompleted();
         publisher.reconcileNightly();
         while (publisher.runBatch()) {
             // reconcile runs out, then the retries of what it could not publish, to their cap

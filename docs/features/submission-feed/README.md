@@ -31,8 +31,8 @@ Switched off until phase B. The code is in `src/main/java/org/nmcpye/datarun/sub
 - The publisher. The ETL hands it each change, which it publishes in a savepoint of the transaction the ETL applies
   that change in, so a feed failure never rolls back tall or events. A failed change is pending and is retried after
   the live backlog, until the attempt cap leaves it dead. Reconcile runs at start, which is also switch-on, and
-  nightly. Freshness counts what waits, and the heartbeat stops while the feed is behind its target or has a dead
-  change.
+  nightly; until the first publication has completed, it publishes no head the feed lacks and only counts them.
+  Freshness counts what waits, and the heartbeat stops while the feed is behind its target or has a dead change.
 - First publication and republishing a scope, started at the admin route `/management/feedpublication`
   ([active-production-interface.md](../../agent-context/active-production-interface.md)).
 - Integrity check 12, which holds the feed to its contract; the agreement harness (`scripts/feed/agreement.sh`); the

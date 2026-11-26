@@ -109,11 +109,12 @@ class FreshnessIT {
 
     /**
      * A failure that recurs on every retry: one poll processes the change (pending), retries it to the cap (three
-     * attempts in these tests) and finds it dead, so no heartbeat; once the cause is fixed, reconcile publishes it and
-     * the heartbeat resumes.
+     * attempts in these tests) and finds it dead, so no heartbeat; once the cause is fixed, reconcile publishes it, as
+     * it does after the first publication, and the heartbeat resumes.
      */
     @Test
     void aFailureThatRecursOnEveryRetryGoesDeadAndStopsTheHeartbeatUntilReconcileFixesIt() {
+        fixture.firstPublicationCompleted();
         Ids unplaced = FeedFixture.nextIds();
         fixture.create(unplaced, document("unplaced", 1, row("r1", "a")), VERSION_2_UID, MISSING_ASSIGNMENT_UID);
 

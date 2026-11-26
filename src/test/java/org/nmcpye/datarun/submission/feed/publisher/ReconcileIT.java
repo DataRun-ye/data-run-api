@@ -27,11 +27,12 @@ import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.document;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.row;
 
 /**
- * Reconcile: every head the feed lacks or holds at another version is published behind the live backlog, after a
- * period with the feed off and after dead changes, and a pass restarted midway skips what it already wrote. A scan
- * reads seven submissions and a batch publishes five in these tests. The database is shared with other tests: the
- * assertions on records cover this test's submissions, and the pass also publishes whatever else the database holds,
- * which is expected to publish cleanly ({@link #othersUnpublishable} says when it does not).
+ * Reconcile repairs the feed once the first publication has completed (engineering, 2026-11-26): every head the feed
+ * lacks or holds at another version is published behind the live backlog, after a period with the feed off and after
+ * dead changes, and a pass restarted midway skips what it already wrote. Before the first publication has completed,
+ * it publishes none the feed lacks and counts them, while live changes publish. A scan reads seven submissions and a
+ * batch publishes five in these tests. The database is shared with other tests: the assertions on records cover this
+ * test's submissions, and a pass also publishes whatever else the database holds.
  */
 @FeedPublisherIntegrationTest
 class ReconcileIT {
@@ -77,9 +78,6 @@ class ReconcileIT {
 
     private FeedFixture fixture;
 
-    /** Submissions of other tests whose heads the feed cannot publish: none, unless another test left one behind. */
-    private long othersUnpublishable;
-
     @BeforeEach
     void setUp() {
         fixture = new FeedFixture(jdbc, transactionManager, url, username, password);
@@ -88,7 +86,6 @@ class ReconcileIT {
         // the pass requested at this context's start, over whatever the shared database held, runs out first
         publisher.reconcileNightly();
         runUntilIdle(publisher);
-        othersUnpublishable = unpublishedHeads(false);
         fixture.clean();
     }
 
@@ -117,25 +114,75 @@ class ReconcileIT {
         fixture.execute("UPDATE outbox SET status = 'success' WHERE status = 'pending'", Map.of());
     }
 
+    /** A publisher as switching the feed on makes it: the switch is read at start, which requests a pass. */
+    private SubmissionPublisher switchedOn() {
+        SubmissionPublisher started = new SubmissionPublisher(switches, dataSource, transactionManager, properties,
+            new FeedWriter(new FormDefinitions(), objectMapper, SplitPartners.NONE), storedSubmissions, backlog,
+            new SimpleMeterRegistry());
+        started.reconcileAtStart();
+        return started;
+    }
+
     private Map<String, Object> freshness() {
         return jdbc.queryForMap("""
             SELECT unpublished, last_reconciled_at, first_publication_completed_at
             FROM feed.freshness WHERE feed = 'submissions'""", Map.of());
     }
 
-    /** This test's submissions (or the others) whose head the feed lacks or holds at another version. */
-    private long unpublishedHeads(boolean fixtures) {
+    /** This test's submissions whose head the feed lacks or holds at another version. */
+    private long unpublishedHeads() {
         return fixture.count("""
             SELECT count(*) FROM data_submission s
             JOIN LATERAL (SELECT max(version) AS version FROM journal.submission_revision r
                           WHERE r.submission_id = s.id) h ON h.version IS NOT NULL
             LEFT JOIN feed.submission f ON f.id = s.id
-            WHERE f.version IS DISTINCT FROM h.version AND (s.id LIKE :prefix) = :fixtures""",
-            Map.of("prefix", FeedFixture.ID_PREFIX + "%", "fixtures", fixtures));
+            WHERE f.version IS DISTINCT FROM h.version AND s.id LIKE :prefix""",
+            Map.of("prefix", FeedFixture.ID_PREFIX + "%"));
     }
 
+    /**
+     * Switched on before any first publication: reconcile publishes none of the submissions the feed lacks, and counts
+     * them in {@code unpublished}; it still repairs a submission the feed holds at another version, and live changes
+     * publish as they happen.
+     */
     @Test
-    void afterAPeriodWithTheFeedOffReconcilePublishesEveryHeadTheFeedLacks() {
+    void beforeTheFirstPublicationSwitchOnLeavesWhatTheFeedLacksToItCountedWhileLiveChangesPublish() {
+        Ids behind = fixture.create(document("behind v0", 1, row("r1", "a")));
+        drain();
+        fixture.update(behind, document("behind v1", 1, row("r1", "a2")));
+        List<Ids> lacked = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            lacked.add(fixture.create(document("lacked " + i, i, row("r" + i, "x"))));
+        }
+        processedWithTheFeedOff();
+
+        SubmissionPublisher started = switchedOn();
+        runUntilIdle(started);
+
+        for (Ids submission : lacked) {
+            assertThat(fixture.record(submission)).as("left to the first publication: %s", submission.id()).isEmpty();
+        }
+        assertThat(fixture.record(behind)).as("a head the feed holds at another version is repaired")
+            .containsEntry("version", 1L);
+        Map<String, Object> freshness = freshness();
+        assertThat((Long) freshness.get("unpublished")).as("the six the feed lacks and the one behind, at least")
+            .isGreaterThanOrEqualTo(7);
+        assertThat(freshness.get("last_reconciled_at")).isNotNull();
+        assertThat(freshness.get("first_publication_completed_at")).as("set by the first publication only").isNull();
+
+        Ids live = fixture.create(document("live", 1, row("r1", "b")));
+        drain();
+        assertThat(fixture.record(live)).as("a live change publishes").containsEntry("version", 0L);
+        assertThat(fixture.rows(live)).hasSize(1);
+        for (Ids submission : lacked) {
+            assertThat(fixture.record(submission)).as("still left: %s", submission.id()).isEmpty();
+        }
+    }
+
+    /** After the first publication and a period with the feed off, switching it on reconciles as before. */
+    @Test
+    void afterTheFirstPublicationAndAPeriodWithTheFeedOffSwitchOnPublishesEveryHeadTheFeedLacks() {
+        fixture.firstPublicationCompleted();
         Ids current = fixture.create(document("published", 1, row("r1", "a")));
         drain();
         Ids behind = fixture.create(document("behind v0", 1, row("r1", "a")));
@@ -152,8 +199,8 @@ class ReconcileIT {
         processedWithTheFeedOff();
         Map<String, Object> currentRecord = fixture.record(current);
 
-        publisher.reconcileNightly();
-        int batches = runUntilIdle(publisher);
+        SubmissionPublisher started = switchedOn();
+        int batches = runUntilIdle(started);
 
         assertThat(batches).as("published in batches of five, behind the live backlog").isGreaterThanOrEqualTo(3);
         for (Ids submission : missing) {
@@ -163,15 +210,11 @@ class ReconcileIT {
         }
         assertThat(fixture.record(behind)).containsEntry("version", 1L);
         assertThat(fixture.record(current)).as("a head already held is left as it was").isEqualTo(currentRecord);
-        assertThat(unpublishedHeads(true)).isZero();
+        assertThat(unpublishedHeads()).isZero();
         Map<String, Object> freshness = freshness();
         assertThat((Long) freshness.get("unpublished")).as("the eleven missing and the one behind, at least")
             .isGreaterThanOrEqualTo(12);
         assertThat(freshness.get("last_reconciled_at")).isNotNull();
-        assertThat(freshness.get("first_publication_completed_at") != null)
-            .as("set once a pass has written every head it found unpublished (other tests' submissions that cannot "
-                + "be published: %d)", othersUnpublishable)
-            .isEqualTo(othersUnpublishable == 0);
     }
 
     /**
@@ -181,6 +224,7 @@ class ReconcileIT {
      */
     @Test
     void afterDeadChangesReconcilePublishesThemOnceTheirCauseIsFixed() {
+        fixture.firstPublicationCompleted();
         Ids deadOutboxRow = fixture.create(document("dead row", 1, row("r1", "a")));
         fixture.execute("UPDATE outbox SET status = 'dead', last_error = 'given up' WHERE submission_id = :id",
             Map.of("id", deadOutboxRow.id()));
@@ -196,15 +240,13 @@ class ReconcileIT {
         assertThat(fixture.record(deadOutboxRow)).as("the dead outbox row's change").containsEntry("version", 0L);
         assertThat(fixture.pending(unplaced)).as("tried again, and still dead").containsEntry("attempts", 4);
         assertThat(fixture.pending(unplaced).get("dead_at")).isNotNull();
-        assertThat(freshness().get("first_publication_completed_at")).as("a head the pass could not write")
-            .isNull();
 
         fixture.fixPlacement();
         publisher.reconcileNightly();
         runUntilIdle(publisher);
         assertThat(fixture.record(unplaced)).containsEntry("version", 0L);
         assertThat(fixture.pending(unplaced)).isEmpty();
-        assertThat(unpublishedHeads(true)).isZero();
+        assertThat(unpublishedHeads()).isZero();
     }
 
     @Test
@@ -229,6 +271,7 @@ class ReconcileIT {
      */
     @Test
     void aPassRestartedMidwaySkipsWhatTheFirstPassWrote() {
+        fixture.firstPublicationCompleted();
         List<Ids> submissions = new ArrayList<>();
         for (int i = 0; i < 12; i++) {
             submissions.add(fixture.create(document("s" + i, i, row("r" + i, "x"))));
@@ -246,10 +289,7 @@ class ReconcileIT {
         assertThat(writtenBeforeTheRestart).as("at most one batch of five, before the restart")
             .isNotEmpty().hasSizeLessThanOrEqualTo(5);
 
-        SubmissionPublisher restarted = new SubmissionPublisher(switches, dataSource, transactionManager, properties,
-            new FeedWriter(new FormDefinitions(), objectMapper, SplitPartners.NONE), storedSubmissions, backlog,
-            new SimpleMeterRegistry());
-        restarted.reconcileAtStart();
+        SubmissionPublisher restarted = switchedOn();
         runUntilIdle(restarted);
 
         for (Ids submission : submissions) {
@@ -260,6 +300,6 @@ class ReconcileIT {
                 assertThat(record.get("position")).as("written once").isEqualTo(before);
             }
         }
-        assertThat(unpublishedHeads(true)).isZero();
+        assertThat(unpublishedHeads()).isZero();
     }
 }

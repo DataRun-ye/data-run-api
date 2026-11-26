@@ -57,11 +57,11 @@ import java.util.function.IntSupplier;
  * dead; then republish marks, each written again at the same version with new positions, its mark kept while it fails
  * ({@link RepublishMarks}); then the first publication, which writes every submission's head in id order from its mark
  * ({@link FirstPublication}); then reconcile, which publishes every head the feed lacks or holds at another version, at
- * start (also switch-on) and nightly ({@link Reconcile}). An admin starts the first publication and marks a scope for
- * republication ({@link FeedPublicationEndpoint}); neither writes an outbox row. Each batch is one transaction of its
- * own under the feed's
- * lock, each submission in its own savepoint, and stops starting submissions once it has run half the feed part's
- * limit, so it holds the lock briefly.</p>
+ * start (also switch-on) and nightly, but leaves those it lacks to the first publication until that has completed
+ * ({@link Reconcile}): it repairs after the first publication, never in its place. An admin starts the first
+ * publication and marks a scope for republication ({@link FeedPublicationEndpoint}); neither writes an outbox row. Each
+ * batch is one transaction of its own under the feed's lock, each submission in its own savepoint, and stops starting
+ * submissions once it has run half the feed part's limit, so it holds the lock briefly.</p>
  *
  * <p><b>Freshness:</b> at each poll the runtime asks {@link #withinFreshnessTarget}, which writes what waits into
  * {@code feed.freshness} (backlog, pending and dead changes, the oldest of each) and says whether the feed is within
@@ -280,8 +280,9 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
 
     /**
      * Publishes reconcile's next submissions, scanning further when none are queued for at most the scan budget, and
-     * records the pass in freshness once it ends. Whether a pass runs: true also when this batch only read pages, so
-     * the runtime calls again, live changes first, and the pass goes on from where it stopped.
+     * records the pass in freshness once it ends. Until the first publication has completed, it leaves the submissions
+     * the feed lacks to it, counting them only. Whether a pass runs: true also when this batch only read pages, so the
+     * runtime calls again, live changes first, and the pass goes on from where it stopped.
      */
     private boolean reconcileBatch() {
         synchronized (reconcile) {
@@ -290,7 +291,8 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
             }
             int batchSize = Math.max(1, properties.getBatchSize());
             int scanSize = Math.max(1, properties.getReconcileScanSize());
-            List<String> batch = reading.execute(status -> reconcile.next(jdbc, scanSize, batchSize));
+            List<String> batch = reading.execute(status -> reconcile.next(jdbc, scanSize, batchSize,
+                freshness.isFirstPublicationComplete(jdbc)));
             if (batch != null && !batch.isEmpty()) {
                 int[] failed = {0};
                 int attempted = inFeedTransaction(() -> publishEach(batch, false, (submissionId, attempt) -> {
@@ -308,8 +310,9 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
                     return 0;
                 });
                 log.info("Reconcile compared {} submissions with their heads: {} were unpublished, {} published, {} "
-                        + "failed, {} left to their retries", summary.checked(), summary.differing(), summary.published(),
-                    summary.failed(), summary.waiting());
+                        + "failed, {} left to their retries, {} the feed lacks left to the first publication",
+                    summary.checked(), summary.differing(), summary.published(), summary.failed(), summary.waiting(),
+                    summary.lacking());
             }
             return true;
         }
@@ -370,7 +373,10 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
     /**
      * Writes the first publication's next batch of heads, in id order from its mark, and moves the mark past them, in
      * one transaction under the feed's lock: a restart repeats at most the batch it lost, and finds those heads held.
-     * A head that cannot be written is a pending change, retried as usual. Whether a first publication was under way.
+     * A head that cannot be written is a pending change, retried as usual. Only a first publication that wrote every
+     * head it passed completes it ({@code first_publication_completed_at}); after one that did not, reconcile still
+     * leaves the heads the feed lacks to it, and an operator starts it again once the cause is fixed. Whether a first
+     * publication was under way.
      */
     private boolean firstPublicationBatch() {
         if (firstPublication.read(jdbc).filter(FirstPublication.State::running).isEmpty()) {
@@ -409,8 +415,15 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
             return 1;
         });
         if (after[0] != null && !after[0].running()) {
-            log.info("The first publication finished: {} heads written, {} held already, {} failed and waiting as "
-                + "pending changes", after[0].written(), after[0].skipped(), after[0].failed());
+            if (after[0].failed() == 0) {
+                log.info("The first publication completed: {} heads written, {} held already; reconcile repairs the "
+                    + "feed from now on", after[0].written(), after[0].skipped());
+            } else {
+                log.warn("The first publication finished without completing: {} heads failed and wait as pending "
+                        + "changes ({} written, {} held already). Reconcile leaves the heads the feed lacks to it, so "
+                        + "start it again once the cause is fixed", after[0].failed(), after[0].written(),
+                    after[0].skipped());
+            }
         }
         return true;
     }

@@ -28,9 +28,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.document;
 
 /**
- * Reconcile reads its pass in pages, and never skips one: a page whose reads fail is read again at the next call, the
- * pass ends only after every page was read, and only then can it count as complete. Each call reads for a bounded time
- * and the next goes on from where it stopped. Seven submissions a page here.
+ * Reconcile reads its pass in pages, and never skips one: a page whose reads fail is read again at the next call, and
+ * the pass ends only after every page was read. Each call reads for a bounded time and the next goes on from where it
+ * stopped. Seven submissions a page here, read as after the first publication, so every head that differs is queued.
  */
 @FeedPublisherIntegrationTest
 class ReconcilePagesIT {
@@ -123,14 +123,14 @@ class ReconcilePagesIT {
         FailingOnce failing = new FailingOnce();
         TransactionTemplate reading = new TransactionTemplate(transactionManager);
 
-        assertThatThrownBy(() -> reading.execute(status -> reconcile.next(failing, 7, 5)))
+        assertThatThrownBy(() -> reading.execute(status -> reconcile.next(failing, 7, 5, true)))
             .hasMessageContaining("injected failure");
-        assertThat(reconcile.finishIfDone()).as("not complete after a failed page").isNull();
+        assertThat(reconcile.finishIfDone()).as("the pass has not ended after a failed page").isNull();
 
         List<String> queued = new ArrayList<>();
         Reconcile.Summary summary = null;
         for (int call = 0; call < 10_000 && summary == null; call++) {
-            List<String> batch = reading.execute(status -> reconcile.next(failing, 7, 5));
+            List<String> batch = reading.execute(status -> reconcile.next(failing, 7, 5, true));
             queued.addAll(batch);
             reconcile.attempted(batch.size(), 0);
             summary = reconcile.finishIfDone();
@@ -140,7 +140,7 @@ class ReconcilePagesIT {
         assertThat(queued).as("every unpublished head was queued, the failed page's included")
             .containsAll(unpublished.stream().map(Ids::id).toList())
             .doesNotHaveDuplicates();
-        assertThat(summary.complete()).isTrue();
+        assertThat(summary.published()).as("every queued head written").isEqualTo(queued.size());
         assertThat(summary.differing()).isEqualTo(queued.size());
     }
 
@@ -166,7 +166,7 @@ class ReconcilePagesIT {
         Reconcile.Summary summary = null;
         for (int call = 0; call < 10_000 && summary == null; call++) {
             int before = pages.pages.size();
-            List<String> batch = reading.execute(status -> reconcile.next(jdbc, 7, 5));
+            List<String> batch = reading.execute(status -> reconcile.next(jdbc, 7, 5, true));
             assertThat(pages.pages.size() - before).as("pages read by one call").isLessThanOrEqualTo(1);
             reconcile.attempted(batch.size(), 0);
             summary = reconcile.finishIfDone();

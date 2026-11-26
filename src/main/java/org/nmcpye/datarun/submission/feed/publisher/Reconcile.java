@@ -21,6 +21,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * periods with the feed off, a rollback to a release without it, dead outbox rows, and anything else that left a head
  * unpublished.
  *
+ * <p>It repairs after the first publication, never in its place (engineering, 2026-11-26). Until the first
+ * publication has completed ({@code first_publication_completed_at}), a submission the feed lacks is counted but left
+ * to the first publication, which an operator starts at a chosen hour; one the feed holds at another version is still
+ * queued. The caller says which applies at each call.</p>
+ *
  * <p>The submissions and their heads' versions come from the stored-submission read seam
  * ({@link StoredSubmissionJdbcReader#headVersionsAfter}); the versions the feed holds and the pending changes, from the
  * feed's own tables.</p>
@@ -31,9 +36,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * <p>A pass is requested at start (the switch is read at start, so this is also switch-on) and nightly; a request
  * during a pass starts another after it. A submission with a pending change that is not dead is counted but left to
- * its retries; a dead one is tried, so a fixed cause gets it published. A submission with no revision has no head to
- * publish (integrity check 11 counts it). The pass is held in memory: a restart starts a new one, which skips every
- * head already held.</p>
+ * its retries; a dead one is tried, so a fixed cause gets it published (one the feed lacks, once the first publication
+ * has completed). A submission with no revision has no head to publish (integrity check 11 counts it). The pass is held
+ * in memory: a restart starts a new one, which skips every head already held.</p>
  *
  * <p>Not safe for concurrent use: the ETL's poll runs it, one batch at a time.</p>
  */
@@ -54,13 +59,9 @@ final class Reconcile {
      * @param published those published by the pass
      * @param failed    those whose publication failed, now pending changes
      * @param waiting   those left to the retries of their pending change
+     * @param lacking   those the feed lacked, left to the first publication because it had not completed
      */
-    record Summary(long checked, long differing, long published, long failed, long waiting) {
-
-        /** Whether the pass wrote every head the feed lacked or held at another version. */
-        boolean complete() {
-            return failed == 0 && waiting == 0;
-        }
+    record Summary(long checked, long differing, long published, long failed, long waiting, long lacking) {
     }
 
     private final StoredSubmissionJdbcReader reader;
@@ -76,6 +77,7 @@ final class Reconcile {
     private long published;
     private long failed;
     private long waiting;
+    private long lacking;
 
     /**
      * @param scanBudget how long one call may go on reading pages while nothing is queued, after its first page
@@ -102,6 +104,7 @@ final class Reconcile {
             published = 0;
             failed = 0;
             waiting = 0;
+            lacking = 0;
         }
         return running;
     }
@@ -112,23 +115,27 @@ final class Reconcile {
      * or every submission was read. Empty when the budget ran out first, and the next call goes on from the same place;
      * empty also once the pass has read every submission and published its queue. The reads run in the caller's
      * transaction.
+     *
+     * @param firstPublicationCompleted whether the first publication has completed: only then is a submission the feed
+     *                                  lacks queued; before, it is counted and left to the first publication
      */
-    List<String> next(NamedParameterJdbcTemplate jdbc, int scanSize, int limit) {
+    List<String> next(NamedParameterJdbcTemplate jdbc, int scanSize, int limit, boolean firstPublicationCompleted) {
         if (queue.isEmpty() && !scannedAll) {
             long stopAt = System.nanoTime() + scanBudget.toNanos();
             do {
-                scan(jdbc, scanSize);
+                scan(jdbc, scanSize, firstPublicationCompleted);
             } while (queue.isEmpty() && !scannedAll && System.nanoTime() - stopAt < 0);
         }
         return queue.stream().limit(limit).toList();
     }
 
     /**
-     * Reads the next page and queues what differs. The pass moves past the page only once all of the page's reads
-     * have succeeded: a read that fails leaves the cursor, the counts and the queue as they were, and the same page is
-     * read again at the next call. So a pass ends, and can count as complete, only after every page was read.
+     * Reads the next page and queues what differs, but a submission the feed lacks only once the first publication has
+     * completed. The pass moves past the page only once all of the page's reads have succeeded: a read that fails
+     * leaves the cursor, the counts and the queue as they were, and the same page is read again at the next call. So a
+     * pass ends only after every page was read.
      */
-    private void scan(NamedParameterJdbcTemplate jdbc, int scanSize) {
+    private void scan(NamedParameterJdbcTemplate jdbc, int scanSize, boolean firstPublicationCompleted) {
         List<HeadVersion> page = reader.headVersionsAfter(after, scanSize);
         Map<String, Long> held = new HashMap<>();
         Map<String, Boolean> pending = new HashMap<>();
@@ -144,6 +151,7 @@ final class Reconcile {
         long pageChecked = 0;
         long pageDiffering = 0;
         long pageWaiting = 0;
+        long pageLacking = 0;
         List<String> pageQueue = new ArrayList<>();
         for (HeadVersion head : page) {
             if (head.version() == null) {
@@ -156,6 +164,8 @@ final class Reconcile {
             pageDiffering++;
             if (Boolean.FALSE.equals(pending.get(head.submissionId()))) {
                 pageWaiting++;
+            } else if (!firstPublicationCompleted && !held.containsKey(head.submissionId())) {
+                pageLacking++;
             } else {
                 pageQueue.add(head.submissionId());
             }
@@ -163,6 +173,7 @@ final class Reconcile {
         checked += pageChecked;
         differing += pageDiffering;
         waiting += pageWaiting;
+        lacking += pageLacking;
         queue.addAll(pageQueue);
         if (!page.isEmpty()) {
             after = page.get(page.size() - 1).submissionId();
@@ -187,6 +198,6 @@ final class Reconcile {
             return null;
         }
         running = false;
-        return new Summary(checked, differing, published, failed, waiting);
+        return new Summary(checked, differing, published, failed, waiting, lacking);
     }
 }

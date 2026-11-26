@@ -484,6 +484,24 @@ final class FeedFixture {
         tx.executeWithoutResult(status -> jdbc.update(sql, params));
     }
 
+    /**
+     * Records the first publication as completed, as one that wrote every head would: from then on reconcile also
+     * publishes the submissions the feed lacks. {@link #clean} removes it with the rest of the freshness record.
+     */
+    void firstPublicationCompleted() {
+        execute("""
+            INSERT INTO feed.freshness (feed, backlog, pending, dead, checked_at, first_publication_completed_at)
+            VALUES ('submissions', 0, 0, 0, now(), now())
+            ON CONFLICT (feed) DO UPDATE SET first_publication_completed_at = now()""", Map.of());
+    }
+
+    /** Whether the first publication has completed: {@code first_publication_completed_at} is set. */
+    boolean firstPublicationIsComplete() {
+        return count("""
+            SELECT count(*) FROM feed.freshness
+            WHERE feed = 'submissions' AND first_publication_completed_at IS NOT NULL""", Map.of()) == 1;
+    }
+
     /** A connection of its own, outside the pool. */
     Connection connect() throws SQLException {
         return DriverManager.getConnection(url, username, password);

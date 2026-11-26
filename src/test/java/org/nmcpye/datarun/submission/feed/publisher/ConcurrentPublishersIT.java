@@ -208,6 +208,8 @@ class ConcurrentPublishersIT {
             live.add(fixture.create(document("live " + i, i, row("r" + i, "x"), row("s" + i, "y"))));
         }
         slowFeedWrites(true);
+        // as after the first publication, so that reconcile publishes the heads the feed lacks
+        fixture.firstPublicationCompleted();
         publisher.reconcileNightly();
         SubmissionPublisher second = secondPublisher();
         second.reconcileAtStart();
