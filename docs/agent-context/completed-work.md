@@ -146,6 +146,13 @@ deployment authority.
   - tall counts a repeat row under the submission that now holds it;
   - switched off: conflict detection (`submission_review.conflict`, review commands in the journal's check), the feed's
     schemas `feed` and `feed_ops` with its dictionary job, and the v2 foundation (`api.idempotency_key`).
+- `v6.5.8` / `d9d6b806`: deployed 2026-11-26 (GitHub release `v6.5.8`). The feed's publisher, switched off, and a
+  safer ETL:
+  - tall and events are applied through the `outbox.processing` seam, each output in its own savepoint;
+  - switched off: the feed's publisher with reconcile, pending changes and republish marks (`feed_ops`), and the
+    first publication and republication behind the admin-only `/management/feedpublication`. Neither compose file
+    passes the feed's switch yet;
+  - conflict detection's follow-ups, switched off; integrity check 12 holds the feed to its contract.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

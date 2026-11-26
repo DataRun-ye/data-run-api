@@ -1,13 +1,13 @@
 # Current Work
 
-Updated: 2026-11-25
+Updated: 2026-11-26
 
 Purpose: accepted server work only. This file is not code, API, architecture,
 or deployment authority.
 
 ## Now
 
-- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.7 and app
+- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.8 and app
   6.1.2, with the household lists loaded in production (see
   `reference-boundary.md`). A campaign-wide go-live rule holds every upload
   until operations set the real start; operations own the campaign's dates,
@@ -23,11 +23,15 @@ or deployment authority.
   - the revision journal in 6.5.6: every change to a submission is recorded in `journal.submission_revision`, from a
     baseline of every submission, with each change tied to one outbox event;
   - the submission lock in 6.5.7: every upload item and the admin delete lock the submission first, waiting at most
-    5 s. Conflict detection, the feed's schema and dictionary, and the v2 foundation shipped switched off.
+    5 s. Conflict detection, the feed's schema and dictionary, and the v2 foundation shipped switched off;
+  - in 6.5.8, the feed's publisher and its first-publication tooling, switched off, and tall and events applied
+    through the `outbox.processing` seam, each in its own savepoint. Conflict detection's rehearsal passed on a
+    production clone; switching it on is a separate decision.
 
   Next, sequenced by engineering, with no delivery deadline:
   - a published feed of current state for downstream analytics, in its own schema, which replaces tall, events and
-    pivots as the analytics interface. They retire once downstream has switched;
+    pivots as the analytics interface. They retire once downstream has switched. Before its first publication: the
+    placement columns, the creator as a user id, and reference values as ids, in one contract revision;
   - submission review: operations find and open any form's submissions and change them through edits with a reason,
     moves, splits, and delete and restore, over a v2 API. The admin tools use it first, then a screen for the
     operations room.
