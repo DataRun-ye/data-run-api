@@ -8,13 +8,16 @@ import java.util.Map;
 
 /**
  * The pending changes ({@code feed_ops.pending}): submissions whose feed part failed, one row each, whatever wrote the
- * failed change. Written in the caller's transaction, which holds the feed's lock.
+ * failed change. Written in the caller's transaction, which holds the feed's lock, but for one case: a change whose
+ * feed part could not take the lock in time is recorded without it, so a recording can land while a publication of the
+ * same submission runs. A publication therefore removes only the recording it saw before it read the head
+ * ({@link FeedWriter}); a later one stays for its retry.
  *
  * <p>A failure counts one attempt and keeps the reason code. The change is retried after a wait that doubles with each
  * failure, from {@code datarun.feed.retry-delay} up to {@code datarun.feed.max-retry-delay}; at
  * {@code datarun.feed.max-attempts} failures it is dead. A dead change is retried no more by the retries, only by
- * reconcile, and a failure there keeps it dead. Any publication of the submission's head removes the row
- * ({@link FeedWriter}).</p>
+ * reconcile, and a failure there keeps it dead. A publication of the submission's head that read it after the row was
+ * last written removes the row.</p>
  */
 final class PendingChanges {
 

@@ -399,6 +399,28 @@ final class FeedFixture {
         });
     }
 
+    /** Makes every write to the feed's pending changes fail, as a broken table would. */
+    void failPendingWrites() {
+        tx.executeWithoutResult(status -> {
+            jdbc.getJdbcTemplate().execute("""
+                CREATE OR REPLACE FUNCTION fp_test_fail_pending() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN
+                  RAISE EXCEPTION 'injected pending failure';
+                END $$""");
+            jdbc.getJdbcTemplate().execute("DROP TRIGGER IF EXISTS fp_test_fail_pending ON feed_ops.pending");
+            jdbc.getJdbcTemplate().execute("CREATE TRIGGER fp_test_fail_pending BEFORE INSERT OR UPDATE ON "
+                + "feed_ops.pending FOR EACH ROW EXECUTE FUNCTION fp_test_fail_pending()");
+        });
+    }
+
+    /** Removes what {@link #failPendingWrites} installed. */
+    void mendPendingWrites() {
+        tx.executeWithoutResult(status -> {
+            jdbc.getJdbcTemplate().execute("DROP TRIGGER IF EXISTS fp_test_fail_pending ON feed_ops.pending");
+            jdbc.getJdbcTemplate().execute("DROP FUNCTION IF EXISTS fp_test_fail_pending()");
+        });
+    }
+
     /** Ends the wait of the submission's outbox rows, as time passing would. */
     void endOutboxWaits(Ids ids) {
         execute("UPDATE outbox SET next_attempt_at = localtimestamp - interval '1 second' WHERE submission_id = :id",
@@ -481,6 +503,7 @@ final class FeedFixture {
      */
     void clean() {
         mendLegacyWrites();
+        mendPendingWrites();
         tx.executeWithoutResult(status -> {
             update("DELETE FROM outbox_processing");
             update("DELETE FROM outbox");

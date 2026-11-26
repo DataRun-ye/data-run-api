@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.submission.feed.publisher;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -7,14 +8,25 @@ import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.nmcpye.datarun.submission.feed.publisher.FeedFixture.Ids;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.datasource.DelegatingDataSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.sql.DataSource;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.MISSING_ASSIGNMENT_UID;
@@ -24,7 +36,8 @@ import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.row;
 
 /**
  * Pending changes: retried behind the live backlog, each failure counted, dead at the cap (three attempts in these
- * tests, retries due at once), and cleared by any later publication of the submission's head. The failure is a real
+ * tests, retries due at once), and cleared by a later publication of the submission's head, one that read the head
+ * after the pending change was recorded. The failure is a real
  * one, not injected: an assignment uid that names no assignment, which a test can fix by storing the assignment.
  */
 @FeedPublisherIntegrationTest
@@ -41,6 +54,12 @@ class PendingRetriesIT {
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Value("${spring.datasource.url}")
     private String url;
@@ -153,5 +172,68 @@ class PendingRetriesIT {
         assertThat(waits).containsExactly(60L, 120L, 240L, 300L, 300L, 300L);
         assertThat(dead).containsExactly(false, false, false, false, true, true);
         assertThat(fixture.pending(submission)).containsEntry("attempts", 6);
+    }
+
+    /**
+     * A change whose feed part could not take the lock records its pending change without it, so one can arrive while
+     * a publication of the same submission runs. Here it is recorded, from another session, after the publication read
+     * the head and before it writes: the publication removes only what it saw before it read the head, so the newer
+     * pending change stays for its retry.
+     */
+    @Test
+    void aPendingChangeRecordedAfterAPublicationReadTheHeadStaysForItsRetry() {
+        Ids submission = fixture.create(document("first", 1, row("r1", "a")));
+        AtomicBoolean recorded = new AtomicBoolean();
+        DataSource beforeTheWrite = new DelegatingDataSource(dataSource) {
+            @Override
+            public Connection getConnection() throws SQLException {
+                return recordingBeforeTheWrite(super.getConnection(), () -> {
+                    if (recorded.compareAndSet(false, true)) {
+                        recordPendingElsewhere(submission);
+                    }
+                });
+            }
+        };
+        FeedWriter writer = new FeedWriter(new FormDefinitions(), objectMapper, SplitPartners.NONE);
+
+        new TransactionTemplate(new DataSourceTransactionManager(beforeTheWrite)).executeWithoutResult(status -> {
+            FeedLock.take(new JdbcTemplate(beforeTheWrite));
+            writer.publish(new FeedStatements(beforeTheWrite, System.nanoTime() + TimeUnit.SECONDS.toNanos(5)),
+                submission.id(), false);
+        });
+
+        assertThat(recorded).isTrue();
+        assertThat(fixture.record(submission)).containsEntry("version", 0L);
+        assertThat(fixture.pending(submission)).as("recorded after the head was read: it stays")
+            .containsEntry("reason", "TIMEOUT");
+    }
+
+    /** The connection, running the action just before it prepares the statement that writes the feed's records. */
+    private static Connection recordingBeforeTheWrite(Connection target, Runnable action) {
+        return (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(), new Class<?>[]{Connection.class},
+            (proxy, method, args) -> {
+                if (method.getName().equals("prepareStatement") && args != null && args[0] instanceof String sql
+                    && sql.contains("written_submission")) {
+                    action.run();
+                }
+                try {
+                    return method.invoke(target, args);
+                } catch (InvocationTargetException e) {
+                    throw e.getCause();
+                }
+            });
+    }
+
+    /** A pending change for the submission, committed from a session of its own, as a feed part without the lock. */
+    private void recordPendingElsewhere(Ids submission) {
+        try (Connection other = fixture.connect(); PreparedStatement insert = other.prepareStatement("""
+            INSERT INTO feed_ops.pending (submission_id, attempts, reason, first_failed_at, last_failed_at,
+                                          next_attempt_at)
+            VALUES (?, 1, 'TIMEOUT', now(), now(), now())""")) {
+            insert.setString(1, submission.id());
+            insert.executeUpdate();
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

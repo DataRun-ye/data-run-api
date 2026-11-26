@@ -15,16 +15,20 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.MISSING_ASSIGNMENT_UID;
+import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.VERSION_2_UID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.document;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.row;
 
 /**
- * The feed never waits for tall and events: the runtime applies each output in a savepoint of its own, so a failure of
- * the legacy projection rolls back only its own writes, and the outbox row goes to its retry, while the feed's record
- * commits. The retry finds the head held and writes nothing to the feed. Values are invented.
+ * The feed never waits for tall and events, nor they for the feed: the runtime applies each output in a savepoint of
+ * its own, so a failure of the legacy projection rolls back only its own writes, and the outbox row goes to its retry,
+ * while the feed's record commits; the retry finds the head held and writes nothing to the feed. A feed that cannot
+ * take its lock in time, or cannot record its failure, rolls back only its own part too. Values are invented.
  */
 @FeedPublisherIntegrationTest
 class FeedBesideTallAndEventsIT {
@@ -162,5 +166,59 @@ class FeedBesideTallAndEventsIT {
             assertThat((String) row.get("last_error")).as("the projection's own failure").endsWith("[SQLState 57014]");
         });
         assertThat(fixture.pending(submission)).isEmpty();
+    }
+
+    /**
+     * Another session holds the feed's lock past the feed part's limit (three seconds here): the feed part fails with
+     * a timeout and waits as a pending change, while tall and events commit and the outbox row succeeds. Once the lock
+     * is free, the retry publishes the head.
+     */
+    @Test
+    @Timeout(60)
+    void aFeedThatCannotTakeItsLockInTimeLeavesTallAndEventsCommittedAndAPendingChange() throws Exception {
+        Ids submission = fixture.create(document("first", 1, row("r1", "a")));
+
+        try (Connection holder = fixture.connect()) {
+            holder.setAutoCommit(false);
+            try (Statement hold = holder.createStatement()) {
+                hold.execute("SELECT pg_advisory_xact_lock(" + FeedLock.KEY + ")");
+            }
+            drain();
+            holder.rollback();
+        }
+
+        assertThat(fixture.outboxStatuses(submission)).containsExactly("success");
+        assertThat(legacyRows(submission)).as("tall and events committed").isPositive();
+        assertThat(fixture.record(submission)).as("the feed did not publish").isEmpty();
+        assertThat(fixture.pending(submission)).containsEntry("reason", "TIMEOUT").containsEntry("attempts", 1);
+
+        while (publisher.runBatch()) {
+            // the retry, with the lock free
+        }
+
+        assertThat(fixture.record(submission)).containsEntry("version", 0L);
+        assertThat(fixture.pending(submission)).isEmpty();
+    }
+
+    /**
+     * The feed part fails (its assignment is missing) and so does the recording of its pending change: only the feed's
+     * part rolls back. Tall and events commit, and the outbox row keeps the feed's failure and goes to its retry, so
+     * the change is not lost to the feed.
+     */
+    @Test
+    void aFeedFailureThatCannotBeRecordedLeavesTallAndEventsCommittedAndTheRowInRetry() {
+        Ids unplaced = FeedFixture.nextIds();
+        fixture.create(unplaced, document("unplaced", 1, row("r1", "a")), VERSION_2_UID, MISSING_ASSIGNMENT_UID);
+        fixture.failPendingWrites();
+
+        drain();
+
+        assertThat(legacyRows(unplaced)).as("tall and events committed").isPositive();
+        assertThat(fixture.record(unplaced)).isEmpty();
+        assertThat(fixture.pending(unplaced)).isEmpty();
+        assertThat(fixture.outboxRows(unplaced)).singleElement().satisfies(row -> {
+            assertThat(row).containsEntry("status", "failed").containsEntry("attempt", 1);
+            assertThat((String) row.get("last_error")).as("the feed's own failure").startsWith("FeedFailure");
+        });
     }
 }

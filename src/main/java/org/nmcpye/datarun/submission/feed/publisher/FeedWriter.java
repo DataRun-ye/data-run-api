@@ -21,6 +21,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.sql.Types;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -141,10 +142,19 @@ final class FeedWriter {
         SELECT (SELECT count(*) FROM written_submission) + (SELECT count(*) FROM gone)
                + (SELECT count(*) FROM written_rows)""";
 
+    /**
+     * When the submission's pending change was last recorded, if it has one, read before the head: the publication
+     * resolves only that recording, which the head it reads covers.
+     */
+    private static final String PENDING_SEEN = """
+        SELECT last_failed_at FROM feed_ops.pending WHERE submission_id = :submissionId""";
+
     /** The pending change resolved, the flag counts of the written record, and freshness moved forward. */
     private static final String BOOKKEEPING = """
         WITH resolved AS (
-            DELETE FROM feed_ops.pending WHERE submission_id = :submissionId RETURNING 1
+            DELETE FROM feed_ops.pending
+            WHERE submission_id = :submissionId AND last_failed_at = CAST(:pendingSeen AS timestamptz)
+            RETURNING 1
         ),
         unflagged AS (
             DELETE FROM feed_ops.normalization_flags
@@ -166,7 +176,9 @@ final class FeedWriter {
             last_changed_at = greatest(f.last_changed_at, excluded.last_changed_at),
             checked_at = excluded.checked_at""";
 
-    private static final String RESOLVE = "DELETE FROM feed_ops.pending WHERE submission_id = :submissionId";
+    private static final String RESOLVE = """
+        DELETE FROM feed_ops.pending
+        WHERE submission_id = :submissionId AND last_failed_at = CAST(:pendingSeen AS timestamptz)""";
 
     private static final JsonNodeFactory NODES = JsonNodeFactory.instance;
 
@@ -199,12 +211,19 @@ final class FeedWriter {
 
     private Result publishOne(FeedStatements statements, String submissionId, boolean republish) {
         NamedParameterJdbcTemplate jdbc = statements.named();
+        // Before the head: a pending change recorded after this read (by a change whose feed part could not take the
+        // lock) may be newer than the head read next, so it stays for its retry.
+        List<OffsetDateTime> seen = jdbc.queryForList(PENDING_SEEN, Map.of("submissionId", submissionId),
+            OffsetDateTime.class);
+        MapSqlParameterSource pending = new MapSqlParameterSource()
+            .addValue("submissionId", submissionId)
+            .addValue("pendingSeen", seen.isEmpty() ? null : seen.get(0), Types.TIMESTAMP_WITH_TIMEZONE);
         Head head = new StoredSubmissionJdbcReader(jdbc, objectMapper).head(submissionId)
             .orElseThrow(() -> new FeedFailure(FeedFailure.HEAD_MISSING));
         List<Long> held = jdbc.queryForList(HELD, Map.of("submissionId", submissionId), Long.class);
         Long heldVersion = held.isEmpty() ? null : held.get(0);
         if (heldVersion != null && (heldVersion > head.version() || (heldVersion == head.version() && !republish))) {
-            jdbc.update(RESOLVE, Map.of("submissionId", submissionId));
+            jdbc.update(RESOLVE, pending);
             return new Result(Outcome.SKIPPED, head.version(), Map.of());
         }
         if (head.formId() == null) {
@@ -238,8 +257,7 @@ final class FeedWriter {
             .addValue("unmappedValues", text(unmapped(normalized.unmapped(), UnaryOperator.identity())),
                 Types.VARCHAR)
             .addValue("rows", StoredJson.write(rows(normalized.rows()))), Long.class);
-        jdbc.update(BOOKKEEPING, new MapSqlParameterSource()
-            .addValue("submissionId", submissionId)
+        jdbc.update(BOOKKEEPING, pending
             .addValue("version", head.version())
             .addValue("flags", flags(normalized.flags()), Types.VARCHAR)
             .addValue("changedAt", head.changedAt(), Types.TIMESTAMP_WITH_TIMEZONE));

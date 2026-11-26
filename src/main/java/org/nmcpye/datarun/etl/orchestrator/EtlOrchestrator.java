@@ -260,45 +260,80 @@ public class EtlOrchestrator {
     }
 
     /**
-     * Applies the change to these outputs in the current transaction, each in a savepoint of its own, and records the
-     * row's outcome: success, or the first failure an output did not keep ({@code carried}, when given, counts as
-     * that). Such a failure is also put in {@code left}, for when this transaction cannot commit.
+     * Applies the change to these outputs in the current transaction and records the row's outcome: success, or the
+     * first failure an output did not keep ({@code carried}, when given, counts as that). Such a failure is also put in
+     * {@code left}, for when this transaction cannot commit. Every output begins first (the feed takes its lock before
+     * anything is written), then each applies the change, by a deadline set when it began; each step, and each output's
+     * keeping of its failure, runs in a savepoint of its own, so no output's failure rolls back another's work.
      */
     private RowResult applyAndRecord(UUID runId, OutboxDto outbox, int attempt, List<ChangeOutput> outputs,
                                      OutputFailure carried, OutputFailure[] left) {
-        outputs.forEach(ChangeOutput::begin);
         long rowDeadline = System.nanoTime() + rowTimeout.toNanos() - rowTimeout.toNanos() / 10;
         ChangeReference change = new ChangeReference(outbox.getSubmissionId(), outbox.getSubmissionVersion());
+        long[] deadlines = new long[outputs.size()];
+        RuntimeException[] failures = new RuntimeException[outputs.size()];
+        for (int i = 0; i < outputs.size(); i++) {
+            ChangeOutput output = outputs.get(i);
+            long deadline = deadline(output, rowDeadline);
+            deadlines[i] = deadline;
+            failures[i] = inSavepoint(() -> output.begin(deadline));
+        }
         OutputFailure failure = carried;
-        for (ChangeOutput output : outputs) {
-            Savepoint savepoint = savepoints.execute((ConnectionCallback<Savepoint>) Connection::setSavepoint);
-            try {
-                output.apply(change, deadline(output, rowDeadline));
-            } catch (RuntimeException e) {
-                if (EtlFailures.stopsTheBatch(e)) {
-                    // the transaction is lost with its connection, or the thread is stopping
-                    throw e;
-                }
-                savepoints.execute((ConnectionCallback<Void>) connection -> {
-                    connection.rollback(savepoint);
-                    return null;
-                });
-                if (!output.keepsFailure(change, e) && failure == null) {
-                    failure = new OutputFailure(output, e);
-                    left[0] = failure;
-                }
-                continue;
+        for (int i = 0; i < outputs.size(); i++) {
+            ChangeOutput output = outputs.get(i);
+            long deadline = deadlines[i];
+            RuntimeException e = failures[i] != null ? failures[i] : inSavepoint(() -> output.apply(change, deadline));
+            if (e != null && !keeps(output, change, e) && failure == null) {
+                failure = new OutputFailure(output, e);
+                left[0] = failure;
             }
-            savepoints.execute((ConnectionCallback<Void>) connection -> {
-                connection.releaseSavepoint(savepoint);
-                return null;
-            });
         }
         if (failure == null) {
             outboxProcessingService.recordSuccess(runId, outbox);
             return RowResult.SUCCESS;
         }
         return recordInThisTransaction(runId, outbox, attempt, failure.error());
+    }
+
+    /**
+     * Runs the step in a savepoint of its own: released when it succeeds, rolled back when it throws, so what it wrote
+     * goes with it and nothing else. Its failure, or {@code null}.
+     */
+    private RuntimeException inSavepoint(Runnable step) {
+        Savepoint savepoint = savepoints.execute((ConnectionCallback<Savepoint>) Connection::setSavepoint);
+        try {
+            step.run();
+        } catch (RuntimeException e) {
+            if (EtlFailures.stopsTheBatch(e)) {
+                // the transaction is lost with its connection, or the thread is stopping
+                throw e;
+            }
+            savepoints.execute((ConnectionCallback<Void>) connection -> {
+                connection.rollback(savepoint);
+                return null;
+            });
+            return e;
+        }
+        savepoints.execute((ConnectionCallback<Void>) connection -> {
+            connection.releaseSavepoint(savepoint);
+            return null;
+        });
+        return null;
+    }
+
+    /**
+     * Whether the output keeps its failure, asked in a savepoint of its own: an output that throws while keeping it
+     * does not keep it, so the row records the failure, and what the others applied stays.
+     */
+    private boolean keeps(ChangeOutput output, ChangeReference change, RuntimeException failure) {
+        boolean[] kept = {false};
+        RuntimeException e = inSavepoint(() -> kept[0] = output.keepsFailure(change, failure));
+        if (e != null) {
+            log.warn("The change output {} could not keep its failure ({}) on submission {}, so the outbox row records "
+                + "it: {}", output.name(), EtlFailures.describe(failure), change.submissionId(), EtlFailures.describe(e));
+            return false;
+        }
+        return kept[0];
     }
 
     /** The output's limit from now, or the row's deadline when that comes first or the output keeps no limit. */

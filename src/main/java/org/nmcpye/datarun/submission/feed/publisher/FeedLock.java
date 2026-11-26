@@ -8,7 +8,8 @@ import org.springframework.jdbc.core.JdbcOperations;
  * PostgreSQL advisory lock, and only then reads heads and takes positions. Commits therefore happen in position order,
  * whoever writes: the ETL's live changes, the retries, the republication and reconcile, and two publishers if two ever
  * run. The ETL's run lock is not relied on: it is held on a connection apart from the run's transactions, which can be
- * lost while the run goes on.
+ * lost while the run goes on. One write may come without it: the pending change of a feed part that could not take
+ * the lock in time ({@link PendingChanges}), which no position depends on.
  *
  * <p>Its key is not the dictionary's ({@link DictionaryPublisher#LOCK_KEY}): the dictionary is rewritten on its own
  * schedule, and neither waits for the other.</p>

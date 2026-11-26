@@ -168,14 +168,16 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
     }
 
     /**
-     * Takes the feed's lock in the runtime's transaction ({@link FeedLock}), before any output applies the change.
+     * Takes the feed's lock in the runtime's transaction ({@link FeedLock}), before any output applies the change,
+     * waiting for it until the deadline (the feed part's limit). A lock another writer holds past that fails the feed
+     * part with a timeout, which the feed keeps as a pending change while the other outputs apply the change.
      *
      * @throws IllegalStateException when no transaction is active
      */
     @Override
-    public void begin() {
+    public void begin(long deadlineNanos) {
         requireTransaction();
-        FeedLock.take(jdbc.getJdbcOperations());
+        FeedLock.take(new FeedStatements(dataSource, deadlineNanos).named().getJdbcOperations());
     }
 
     /**
@@ -191,7 +193,10 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
         counted(result);
     }
 
-    /** Records the failed feed part as a pending change, in the runtime's transaction: the feed keeps it. */
+    /**
+     * Records the failed feed part as a pending change, in the runtime's transaction: the feed keeps it. When the part
+     * failed because the lock was not free in time, the change is recorded without the lock ({@link PendingChanges}).
+     */
     @Override
     public boolean keepsFailure(ChangeReference change, RuntimeException failure) {
         failures.increment();
