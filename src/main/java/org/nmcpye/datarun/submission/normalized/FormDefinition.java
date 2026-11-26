@@ -123,26 +123,9 @@ public final class FormDefinition {
     }
 
     /**
-     * The order the normalizer walks a document in, as an order of data paths: key by key from the root, each key in
-     * {@link String#compareTo} order, a path before the paths under it. Of two values of one field in one row, the
-     * first in this order is the one kept, unless only the other is resolved through the pinned version.
-     */
-    public static final Comparator<String> WALK_ORDER = (left, right) -> {
-        String[] a = left.split("\\.", -1);
-        String[] b = right.split("\\.", -1);
-        for (int i = 0; i < Math.min(a.length, b.length); i++) {
-            int order = a[i].compareTo(b[i]);
-            if (order != 0) {
-                return order;
-            }
-        }
-        return Integer.compare(a.length, b.length);
-    };
-
-    /**
      * Which placements of a version's fields hold that version's values, by the rules the normalizer resolves values
      * with: at a data path the version names twice, the definition resolution picks (the first in stored order); and
-     * of one field placed twice in one section, the placement first in {@link #WALK_ORDER}, whose value a row keeps.
+     * of one field placed twice in one section, the placement first in {@link WalkOrder#PATHS}, whose value a row keeps.
      * A field whose data element no longer exists holds none. The feed's dictionary publishes the placements that do.
      *
      * @param published          the placements that hold values, in stored order
@@ -180,7 +163,7 @@ public final class FormDefinition {
         Map<List<String>, FieldDefinition> firstInWalkOrder = new HashMap<>();
         for (FieldDefinition field : resolving) {
             firstInWalkOrder.merge(Arrays.asList(field.sectionId(), field.id()), field,
-                (kept, other) -> WALK_ORDER.compare(other.path(), kept.path()) < 0 ? other : kept);
+                (kept, other) -> WalkOrder.PATHS.compare(other.path(), kept.path()) < 0 ? other : kept);
         }
         List<FieldDefinition> published = new ArrayList<>();
         List<FieldDefinition> placedTwice = new ArrayList<>();

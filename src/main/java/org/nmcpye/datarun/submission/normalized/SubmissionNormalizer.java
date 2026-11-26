@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -176,7 +175,7 @@ public final class SubmissionNormalizer {
         }
 
         /**
-         * Walks an object's keys in a fixed order.
+         * Walks an object's keys in walk order ({@link WalkOrder}).
          *
          * @param object    the object
          * @param path      its data path, or {@code null} for the document's root
@@ -186,12 +185,7 @@ public final class SubmissionNormalizer {
          * @param depth     how many objects and rows enclose its keys' values, itself included
          */
         void members(JsonNode object, String path, Container container, RowKey row, boolean isRow, int depth) {
-            List<String> keys = new ArrayList<>(object.size());
-            for (Iterator<String> names = object.fieldNames(); names.hasNext(); ) {
-                keys.add(names.next());
-            }
-            keys.sort(null);
-            for (String key : keys) {
+            for (String key : WalkOrder.keys(object)) {
                 if (isRow ? ROW_STRUCTURE_KEYS.contains(key) : path == null && ROOT_STRUCTURE_KEY.equals(key)) {
                     continue;
                 }

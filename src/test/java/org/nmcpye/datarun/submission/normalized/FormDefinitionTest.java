@@ -302,15 +302,6 @@ class FormDefinitionTest {
     }
 
     @Test
-    void walkOrderComparesKeyByKey() {
-        assertThat(FormDefinition.WALK_ORDER.compare("visit.headline", "visit-alt")).isNegative();
-        assertThat("visit.headline".compareTo("visit-alt")).as("unlike the text as a whole").isPositive();
-        assertThat(FormDefinition.WALK_ORDER.compare("a", "a.b")).isNegative();
-        assertThat(FormDefinition.WALK_ORDER.compare("a.b", "a.b")).isZero();
-        assertThat(FormDefinition.WALK_ORDER.compare("b", "a.z")).isPositive();
-    }
-
-    @Test
     void placementsAreAskedOfTheFormsOwnVersions() {
         FormVersionDefinition v1 = version("01JV0000000000000000000001", 1).build(FORM);
         FormVersionDefinition other = version("01JV0000000000000000000009", 9).build(FORM);
