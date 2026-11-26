@@ -5,6 +5,7 @@ import org.nmcpye.datarun.submission.normalized.jdbc.StoredSubmissionJdbcReader.
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -106,38 +107,52 @@ final class Reconcile {
         return queue.stream().limit(limit).toList();
     }
 
+    /**
+     * Reads the next page and queues what differs. The pass moves past the page only once all of the page's reads
+     * have succeeded: a read that fails leaves the cursor, the counts and the queue as they were, and the same page is
+     * read again at the next call. So a pass ends, and can count as complete, only after every page was read.
+     */
     private void scan(NamedParameterJdbcTemplate jdbc, int scanSize) {
         List<HeadVersion> page = reader.headVersionsAfter(after, scanSize);
-        if (page.size() < scanSize) {
-            scannedAll = true;
-        }
-        if (page.isEmpty()) {
-            return;
-        }
-        after = page.get(page.size() - 1).submissionId();
-        Map<String, Object> ids = Map.of("ids", page.stream().map(HeadVersion::submissionId).toList());
         Map<String, Long> held = new HashMap<>();
-        jdbc.query(HELD, ids, rs -> {
-            held.put(rs.getString("id"), rs.getLong("version"));
-        });
         Map<String, Boolean> pending = new HashMap<>();
-        jdbc.query(PENDING, ids, rs -> {
-            pending.put(rs.getString("submission_id"), rs.getBoolean("dead"));
-        });
+        if (!page.isEmpty()) {
+            Map<String, Object> ids = Map.of("ids", page.stream().map(HeadVersion::submissionId).toList());
+            jdbc.query(HELD, ids, rs -> {
+                held.put(rs.getString("id"), rs.getLong("version"));
+            });
+            jdbc.query(PENDING, ids, rs -> {
+                pending.put(rs.getString("submission_id"), rs.getBoolean("dead"));
+            });
+        }
+        long pageChecked = 0;
+        long pageDiffering = 0;
+        long pageWaiting = 0;
+        List<String> pageQueue = new ArrayList<>();
         for (HeadVersion head : page) {
             if (head.version() == null) {
                 continue;
             }
-            checked++;
+            pageChecked++;
             if (Objects.equals(head.version(), held.get(head.submissionId()))) {
                 continue;
             }
-            differing++;
+            pageDiffering++;
             if (Boolean.FALSE.equals(pending.get(head.submissionId()))) {
-                waiting++;
+                pageWaiting++;
             } else {
-                queue.add(head.submissionId());
+                pageQueue.add(head.submissionId());
             }
+        }
+        checked += pageChecked;
+        differing += pageDiffering;
+        waiting += pageWaiting;
+        queue.addAll(pageQueue);
+        if (!page.isEmpty()) {
+            after = page.get(page.size() - 1).submissionId();
+        }
+        if (page.size() < scanSize) {
+            scannedAll = true;
         }
     }
 
