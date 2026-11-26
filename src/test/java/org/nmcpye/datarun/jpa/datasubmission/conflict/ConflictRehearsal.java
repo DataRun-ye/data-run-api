@@ -191,7 +191,9 @@ public final class ConflictRehearsal implements AutoCloseable {
             requireTheSchema();
             line("database " + jdbc.getJdbcTemplate().queryForObject("SELECT current_database()", String.class)
                 + ", " + jdbc.getJdbcTemplate().queryForObject("SHOW server_version", String.class)
-                + (settings.scope() == null ? "" : ", submissions in the given scope only"));
+                + (settings.scope() == null ? "" : ", submissions in the given scope only")
+                + "; " + settings.threads() + " threads, heap at most "
+                + Runtime.getRuntime().maxMemory() / (1024 * 1024) + " MB");
             reSendEveryHeadUnchanged();
             changeASample();
             statusEvidence();
