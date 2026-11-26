@@ -303,8 +303,8 @@ A repeating section's wide table reads `submission_row` filtered by `section_id`
   delete joins; its copy of `data_submission` for values and placement (keeping `(id, uid)` while a model still needs
   uids).
 - **Re-pointing keys:** the server publishes a crosswalk from `canonical_element_id` to `field_id`, with the form and
-  the versions where it applies. Several canonical ids can map to one field (renames split today's keys); none maps
-  to two.
+  the versions where it applies (`scripts/feed/crosswalk.sql`). Several canonical ids can map to one field (renames
+  split today's keys); none maps to two.
 - **`value_ref_uid` has no feed equivalent.** The feed publishes the raw value, and downstream joins its copies with
   the rules tall uses today: options within the field's option set by code, then name, then English label, then
   Arabic label; org units by uid, then code, then id; teams by uid or id. Option values that match no option stay as
@@ -357,9 +357,9 @@ feed's release rehearsed. Timing follows engineering readiness, not a campaign d
   deselected its streams. Once models read it, switching it off stops their dashboards from updating and dropping it
   removes their source, so the rollback is a pause; reconcile at switch-on catches up.
 
-**Comparison queries** (server-provided, dated, counts only): per form and day, live submissions in the feed against
-tall and against `data_submission`; live rows per repeating section against events; values per field through the
-crosswalk; the first-time values of §14, counted one by one.
+**Comparison queries** (server-provided, dated, counts only, `scripts/feed/comparison.sql`): per form and day, live
+submissions in the feed against tall and against `data_submission`; live rows per repeating section against events;
+values per field through the crosswalk; the first-time values of §14, counted one by one (still to add).
 
 ### Phase C: downstream switches
 

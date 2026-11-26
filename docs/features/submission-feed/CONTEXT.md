@@ -159,7 +159,8 @@ nightly. Not an activity's reconciliation form.
 Downstream's re-read of a stream in Airbyte ("Refresh and Retain Records").
 
 **Crosswalk**:
-The published map from analytics' `canonical_element_id` to `field_id`, for re-pointing existing models.
+The published map from analytics' `canonical_element_id` to `field_id`, for re-pointing existing models
+(`scripts/feed/crosswalk.sql`).
 
 **Agreement harness**:
 The check, counts only, that the submission normalizer agrees with the feed spike's oracle on every head of the
