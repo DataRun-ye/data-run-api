@@ -504,9 +504,12 @@ Data repairs and operations SQL (a rule, not yet a guard):
 
 The ETL (`etl/`) is the only consumer of the current `outbox`. For each row it
 re-reads the submission and projects it into `analytics.tall_canonical` and
-`analytics.events`; a `DELETE` row marks the submission's events deleted. It
-does not read `submission_version` or the journal yet: the projector step
-moves it onto the revision each row names. What a projection writes or leaves behind (removed rows,
+`analytics.events`; a `DELETE` row marks the submission's events deleted. That
+projection does not read `submission_version` or the journal yet: the
+projector step moves it onto the revision each row names. While the submission
+feed is on, the same runtime also hands each row's submission id and
+`submission_version` to the feed, which publishes the submission's head from
+the journal (`docs/features/submission-feed/contract.md`). What a projection writes or leaves behind (removed rows,
 voids, delete markers) belongs to the projector work, not to this runtime.
 
 - **Polling.** `ScheduledOrchestratorRunner` starts a poll
@@ -517,16 +520,30 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   is not a success. The pause before the next poll then doubles, up to
   `datarun.etl.max-poll-delay`, until a poll succeeds.
   `datarun.etl.enabled=false` stops an instance from polling. Scheduling is off
-  in the test profiles.
+  in the test profiles. While the submission feed is on (switch
+  `submission-feed`), every poll takes the lock, and once no row is due it runs
+  the feed's own work (its retries, republication and reconcile) one batch at a
+  time, claiming due rows first again after each batch, for as long as the poll
+  may run. A reconcile batch that finds nothing to publish reads for at most
+  `datarun.feed.reconcile-scan-budget` (1 s), which must be shorter than
+  `datarun.etl.max-poll-duration` or the application does not start.
 - **Claims.** A claim takes `pending` or `failed` rows whose `next_attempt_at`
   is empty or past, in submission-serial then outbox-id order. It leases the
   row by moving `next_attempt_at` forward by `datarun.etl.claim-lease`, so a run
   that dies frees its rows when the lease ends. A claim is not an attempt.
 - **Outcomes.** When a row's processing starts, its `attempt` is counted in a
-  transaction of its own. The row is then projected and marked `success` in
-  one transaction, which gives up after `datarun.etl.row-timeout`. A failure of
-  any kind, errors included, is recorded after that transaction has rolled
-  back:
+  transaction of its own. The row is then applied, and its outcome recorded,
+  in one transaction, which gives up after `datarun.etl.row-timeout`: to the
+  submission feed first while it is on, then to tall and events, each part in a
+  savepoint of its own, so a part that fails rolls back only its own writes.
+  The feed keeps its own failures, its lock wait included, as pending changes
+  that it retries itself (`feed_ops.pending`): the row is then `success`, with
+  tall and events written. A failure of tall or events, or a feed failure that
+  could not be recorded as a pending change, is recorded on the row in the same
+  transaction, beside what the other parts wrote. When the transaction cannot
+  commit (its time ran out), the other parts apply the row again in a new
+  transaction with that failure, and only if that fails too is the failure
+  recorded after a rollback, in a transaction of its own:
   - before the last attempt, the row becomes `failed`. It keeps a
     `last_error`: the database's first error line or the root cause, never
     bound values. It is retried after `datarun.etl.retry-delay`, doubling up
@@ -613,7 +630,11 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   - Heartbeat (`DATARUN_ETL_HEARTBEAT_URL`, `datarun.etl.heartbeat-url`):
     after a poll that succeeded, the ETL sends a POST to the monitor, at most
     once a minute, and gives up after 5 s. A failure is logged at DEBUG and
-    never touches the poll. A healthy ETL pings about every 60 to 90 s.
+    never touches the poll. A healthy ETL pings about every 60 to 90 s. While
+    the submission feed is on, a poll pings only while the feed is within its
+    freshness target (`datarun.feed.freshness-target`, 2 minutes): nothing
+    dead, and the oldest change it has not published and its oldest pending
+    change both younger than the target (`feed.freshness`).
   - One-time setup in GlitchTip (owner): create the project `datarun-api`
     (platform Java) and copy its DSN. Under Uptime Monitors, add a monitor of
     type Heartbeat with an interval of 300 s and copy its URL, of the form
@@ -640,9 +661,13 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     - The heartbeat monitor is down: no poll has succeeded within the
       interval. The application is down or restarting (a long deploy shows
       this too), the ETL is switched off, its polls keep failing (the pause
-      grows to five minutes), or the API VM cannot reach GlitchTip. Check that
-      `datarunapi` runs, its log (`docker logs --since 30m datarunapi`), then
-      the outbox. The next successful poll brings the monitor back up.
+      grows to five minutes), or the API VM cannot reach GlitchTip. With the
+      submission feed on, also when the feed is behind its freshness target or
+      has a dead change: the log says `The feed is behind its freshness
+      target`, and `feed.freshness` and `feed_ops.pending` (with its reason
+      codes) show what waits. Check that `datarunapi` runs, its log
+      (`docker logs --since 30m datarunapi`), then the outbox. The next
+      successful poll within the target brings the monitor back up.
     - Any other issue: an ERROR line or uncaught exception. The full line,
       with its values, is in the application's log at that time; an event
       raised during a request carries the request id the log line shows.
