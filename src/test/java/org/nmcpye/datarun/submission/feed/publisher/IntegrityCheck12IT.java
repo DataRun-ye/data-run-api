@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.FORM_UID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.MISSING_ASSIGNMENT_UID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.VERSION_2_UID;
 import static org.nmcpye.datarun.submission.feed.publisher.FeedFixture.document;
@@ -171,6 +172,8 @@ class IntegrityCheck12IT {
         assertThat(after.line("12d") - before.line("12d")).as("12d: the live row of a deleted record").isEqualTo(1);
         assertThat(after.line("12e") - before.line("12e")).as("12e: one position used twice").isEqualTo(1);
         assertThat(after.line("12f") - before.line("12f")).as("12f: a live row missing").isEqualTo(1);
+        assertThat(after.scoped().getOrDefault("12f|" + FORM_UID, 0L)
+            - before.scoped().getOrDefault("12f|" + FORM_UID, 0L)).as("12f: counted in its form's run").isEqualTo(1);
         assertThat(after.line("12g") - before.line("12g")).as("12g: a pending change past the target").isEqualTo(1);
     }
 
@@ -196,6 +199,25 @@ class IntegrityCheck12IT {
         assertThat(after.line("12i")).as("but its version, which the feed lacks, is in the backlog")
             .isGreaterThanOrEqualTo(1);
         assertThat(after.line("12g")).as("a dead change is no longer pending").isZero();
+    }
+
+    /**
+     * 12f walks the heads one form at a time; a record whose submission names no form is in no form's run, and its
+     * head has no rows, so it counts when it has a live row record.
+     */
+    @Test
+    void aRecordWhoseSubmissionNamesNoFormCountsWhenItHasLiveRows() throws Exception {
+        Ids withRows = fixture.create(document("with rows", 1, row("r1", "a")));
+        Ids withoutRows = fixture.create(document("without rows", 0));
+        publishEverything();
+        IntegrityCheck12 before = IntegrityCheck12.run(database);
+
+        fixture.execute("UPDATE data_submission SET template_uid = NULL WHERE id IN (:ids)",
+            Map.of("ids", List.of(withRows.id(), withoutRows.id())));
+
+        IntegrityCheck12 after = IntegrityCheck12.run(database);
+        assertThat(after.line("12f") - before.line("12f")).isEqualTo(1);
+        assertThat(after.scoped()).doesNotContainKey("12f|" + FORM_UID);
     }
 
     /** A mutation of the row records that the normalizer's count would see: an extra live row. */

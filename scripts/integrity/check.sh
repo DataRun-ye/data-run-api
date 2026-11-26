@@ -11,7 +11,8 @@
 # read-only role pg_read_all_data. The database host may have little memory,
 # so every statement runs with work_mem 8MB, no parallel workers, a 5-minute
 # timeout and at most 1GB of temporary files, one statement at a time, and
-# the payload walks run one template at a time.
+# the payload walks and check 12's walk of the feed's heads run one template
+# at a time.
 #
 # Staging by default. Production only with DATARUN_INTEGRITY_PRODUCTION=true.
 #
@@ -202,20 +203,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# temp_file_limit may be set only by a superuser, so it comes before the
-# switch to the read-only role.
+# The transaction and the limits on its statements come from
+# begin-read-only.sql, which the tests that run a check use too.
 {
     echo '\set ON_ERROR_STOP 1'
-    echo 'BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;'
-    echo "SET LOCAL work_mem = '8MB';"
-    echo "SET LOCAL max_parallel_workers_per_gather = 0;"
-    echo "SET LOCAL statement_timeout = '5min';"
-    echo "SET LOCAL lock_timeout = '5s';"
-    echo "SET LOCAL idle_in_transaction_session_timeout = '2min';"
-    echo "SET LOCAL jit = off;"
-    echo "SET LOCAL client_connection_check_interval = '10s';"
-    echo "SET LOCAL temp_file_limit = '1GB';"
-    echo "SET LOCAL ROLE pg_read_all_data;"
+    cat "$sql_dir/begin-read-only.sql"
     echo '\timing on'
     for f in "$sql_dir"/[0-9][0-9]-*.sql; do
         echo "\\echo @check $(basename "$f" .sql)"
@@ -226,6 +218,12 @@ trap cleanup EXIT
         echo "\\set tmpl '$t'"
         echo "\\echo @template $t"
         cat "$sql_dir/payload-by-template.sql"
+    done
+    echo '\echo @check feed-rows-by-form'
+    for t in "${templates[@]}"; do
+        echo "\\set tmpl '$t'"
+        echo "\\echo @template $t"
+        cat "$sql_dir/feed-rows-by-form.sql"
     done
     echo '\timing off'
     echo 'ROLLBACK;'

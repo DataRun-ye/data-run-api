@@ -77,9 +77,12 @@ the output was not understood.
   `lock_timeout = '5s'`, `idle_in_transaction_session_timeout = '2min'`,
   `jit = off` and `temp_file_limit = '1GB'` (superuser-only, so set first), then
   `SET LOCAL ROLE pg_read_all_data`, so the statements run with read rights
-  only. Statements run one at a time.
+  only. Statements run one at a time. The transaction and its limits come from
+  `sql/begin-read-only.sql`, which the tests that run a check use too.
 - The payload walks run one template at a time (`payload-by-template.sql`, once
-  per template), and the pivot checks one pivot table at a time.
+  per template), and so does check 12's walk of the feed's heads
+  (`feed-rows-by-form.sql`, once per form); the pivot checks run one pivot
+  table at a time.
 - The SQL is copied to the database host first and run there with
   `sudo -n -u postgres psql`, as the reference scripts do, so a stalled tunnel
   cannot leave the transaction waiting for input. The copy is removed
@@ -114,6 +117,8 @@ about 0.5 GB, under the 1 GB limit.
 | `sql/11-revisions.sql` | 11 |
 | `sql/12-feed.sql` | 12 |
 | `sql/payload-by-template.sql` | 2, 3, 5a–5b, 6, 7 |
+| `sql/feed-rows-by-form.sql` | 12f, one form at a time |
+| `sql/begin-read-only.sql` | none: the transaction and limits every check runs under |
 
 Each SQL statement returns rows of `key|count|description`, optionally with a
 fourth column saying where (a pivot table, or for check 12 a reason code or a
@@ -366,7 +371,13 @@ every line reads -1.
   its path resolves to a repeating section; a path resolves, for the value's
   shape, to the first definition that can hold it, the pinned version's first,
   then the newest version's, a field before a section (the file states the
-  rule in full).
+  rule in full). The walk runs one form at a time (`feed-rows-by-form.sql`),
+  and within a form one head at a time, so it writes no temporary files and
+  only its time grows with the form: about 0.8 ms a head on invented documents
+  of 130 nodes (200,000 heads in 165 s), so one form's run meets the 5-minute
+  statement limit near 350,000 heads. `--detail` splits the count by form.
+  `12-feed.sql` adds the records whose submission names no form: their heads
+  have no rows, so a live row record differs.
 - **12g** Pending changes older than the freshness target (two minutes).
 - **12h** The feed's dead changes: pending changes past the attempt cap, by
   reason code, as `freshness.dead` counts them. `--detail` splits them.
