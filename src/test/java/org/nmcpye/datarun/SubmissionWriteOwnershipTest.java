@@ -248,7 +248,7 @@ class SubmissionWriteOwnershipTest {
             "    WHERE id = ?\"\"\";",
             "char c = '\"';",
             "String d = \"a \\\" quote and update data_submission\";");
-        assertThat(stringLiterals(source))
+        assertThat(JavaLiterals.strings(source))
             .containsExactly("UPDATE held_submission SET x = 1", "\n    DELETE FROM outbox\n    WHERE id = ?",
                 "a \\\" quote and update data_submission");
 
@@ -299,7 +299,7 @@ class SubmissionWriteOwnershipTest {
      */
     static List<String> sourceFindings(String path, String source) {
         List<String> findings = new ArrayList<>();
-        for (Literal literal : literals(source)) {
+        for (JavaLiterals.Literal literal : JavaLiterals.literals(source)) {
             Matcher table = TABLE.matcher(literal.text());
             boolean sqlLike = SQL_WORD.matcher(literal.text()).find() || WHOLE_TABLE.matcher(literal.text()).matches();
             List<String> seen = new ArrayList<>();
@@ -352,58 +352,6 @@ class SubmissionWriteOwnershipTest {
 
     private static String relative(Path root, Path file) {
         return root.relativize(file).toString().replace('\\', '/');
-    }
-
-    /** A string literal or text block, and whether it sits in a {@code @Query} or {@code @NativeQuery}. */
-    record Literal(String text, boolean inQuery) {
-    }
-
-    /** The contents of the string literals and text blocks in Java source, comments and char literals skipped. */
-    static List<String> stringLiterals(String source) {
-        return literals(source).stream().map(Literal::text).toList();
-    }
-
-    static List<Literal> literals(String source) {
-        List<Literal> literals = new ArrayList<>();
-        int queryDepth = 0;
-        int i = 0;
-        while (i < source.length()) {
-            char c = source.charAt(i);
-            if (source.startsWith("//", i)) {
-                int end = source.indexOf('\n', i);
-                i = end < 0 ? source.length() : end + 1;
-            } else if (source.startsWith("/*", i)) {
-                int end = source.indexOf("*/", i + 2);
-                i = end < 0 ? source.length() : end + 2;
-            } else if (source.startsWith("\"\"\"", i)) {
-                int end = source.indexOf("\"\"\"", i + 3);
-                end = end < 0 ? source.length() : end;
-                literals.add(new Literal(source.substring(i + 3, end), queryDepth > 0));
-                i = end + 3;
-            } else if (c == '"' || c == '\'') {
-                int j = i + 1;
-                while (j < source.length() && source.charAt(j) != c) {
-                    j += source.charAt(j) == '\\' ? 2 : 1;
-                }
-                if (c == '"') {
-                    literals.add(new Literal(source.substring(i + 1, Math.min(j, source.length())), queryDepth > 0));
-                }
-                i = j + 1;
-            } else if (queryDepth == 0 && (source.startsWith("@Query", i) || source.startsWith("@NativeQuery", i))) {
-                int open = source.indexOf('(', i);
-                boolean annotation = open > 0 && source.substring(i + 1, open).strip().matches("Query|NativeQuery");
-                i = annotation ? open + 1 : i + 1;
-                queryDepth = annotation ? 1 : 0;
-            } else {
-                if (queryDepth > 0 && c == '(') {
-                    queryDepth++;
-                } else if (queryDepth > 0 && c == ')') {
-                    queryDepth--;
-                }
-                i++;
-            }
-        }
-        return literals;
     }
 
     /** The rule is not vacuous: a class outside the command service that saves a submission breaks it. */

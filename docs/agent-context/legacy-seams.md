@@ -12,7 +12,7 @@ Package names are relative to `org.nmcpye.datarun`.
 
 | Kind | What it is | New code |
 | --- | --- | --- |
-| Retiring derived | derived from submissions, and replaced by the feed | no dependency, either way: a legacy output's failure never aborts or delays new work |
+| Retiring derived | derived from submissions, and replaced by the feed | no dependency, either way: a legacy output's failure never aborts new work, and delays it by at most one retry |
 | Transitional | the outbox: stays for now, as an edge integration artifact | only through its seam |
 | System of record | data and rules old code still owns | only through its seam |
 | Client contract | what installed phones and the admin's tools rely on | none: adapted at the edge |

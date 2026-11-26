@@ -219,7 +219,7 @@ class FeedWriteOwnershipTest {
     static List<String> sourceFindings(String path, String source) {
         String where = path.startsWith(PUBLISHER_SOURCES) ? "allowed " : "outside ";
         List<String> findings = new ArrayList<>();
-        for (String literal : SubmissionWriteOwnershipTest.stringLiterals(source)) {
+        for (String literal : JavaLiterals.strings(source)) {
             List<String> seen = new ArrayList<>();
             boolean sqlLike = SQL_WORD.matcher(literal).find() || WHOLE_RELATION.matcher(literal).matches();
             Matcher relation = RELATION.matcher(literal);

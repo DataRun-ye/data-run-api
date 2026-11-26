@@ -87,8 +87,8 @@ import static org.nmcpye.datarun.NewCodeSeamsTest.Kind.TRANSITIONAL;
  * frozen: an exception names its class and dependency, and the test fails once it no longer occurs.</p>
  * <ul>
  *   <li>(a) Retiring derived structures: no dependency from new code, and none from them to new code, so a legacy
- *       output's failure never aborts or delays new work. Code that stays depends on them only where
- *       {@link #LEFTOVERS} lists the class and the dependency.</li>
+ *       output's failure never aborts new work, and delays it by at most one retry. Code that stays depends on them
+ *       only where {@link #LEFTOVERS} lists the class and the dependency.</li>
  *   <li>(b) Systems of record and transitional code: new code reaches them only through the listed seams.</li>
  *   <li>(c) Client contracts: new code never depends on v1 resources, their DTOs, mappers or v1 error codes.</li>
  *   <li>SQL text in new code, which ArchUnit cannot see, is scanned as a tripwire, not proof: it names no retiring
@@ -323,7 +323,7 @@ class NewCodeSeamsTest {
     static ArchRule retiringCodeDependsOnNoNewCode(DescribedPredicate<JavaClass> retiring,
                                                    DescribedPredicate<JavaClass> newCode) {
         return noClasses().that(retiring).should().dependOnClassesThat(newCode)
-            .because("a legacy output's failure must never abort or delay new work (rule a)");
+            .because("a legacy output's failure never aborts new work, and delays it by at most one retry (rule a)");
     }
 
     /** (a) Code that stays takes no dependency on retiring code, beyond the listed leftovers. */
@@ -350,16 +350,17 @@ class NewCodeSeamsTest {
 
     /**
      * SQL in new code: one finding per retiring or transitional relation, and per system-of-record table outside its
-     * seam. A tripwire, not proof. It reads only literals with the structure of a query, in any case (select ... from,
-     * insert into, update ... set, delete from, with ... as (), so prose naming a table is not flagged. Names compare
-     * as written: tables are lowercase here, and JPQL names entities (Activity), so JPQL is not flagged either. It
-     * does not see a table name written in uppercase, a fragment without that structure joined to others at run time,
-     * names assembled from constants, a FROM list item after a nested parenthesis, or tables reached through views,
-     * functions or a search path.
+     * seam. A tripwire, not proof. It reads only literals with the structure of a query, in any case: select ... from,
+     * insert into, update [only] table [alias] set, delete from, merge into ... using, with ... as (. So most prose
+     * naming a table is not flagged; prose shaped like a query is, a known false positive ("Delete from team {}").
+     * Names compare as written: tables are lowercase here, and JPQL names entities (Activity), so JPQL is not
+     * flagged. It does not see a table name written in uppercase, a fragment without that structure joined to others
+     * at run time, names assembled from constants, a FROM list item after a nested parenthesis, or tables reached
+     * through views, functions or a search path.
      */
     static List<String> sqlFindings(String path, String source) {
         List<String> findings = new ArrayList<>();
-        for (String literal : SubmissionWriteOwnershipTest.stringLiterals(source)) {
+        for (String literal : JavaLiterals.strings(source)) {
             if (!SQL_LIKE.matcher(literal).find()) {
                 continue;
             }
@@ -589,6 +590,22 @@ class NewCodeSeamsTest {
                 "org/nmcpye/datarun/submission/feed/X.java: system-of-record table org_unit outside its seam",
                 "org/nmcpye/datarun/submission/feed/X.java: retiring relation canonical_element_anchor",
                 "org/nmcpye/datarun/submission/feed/X.java: retiring relation outbox_event");
+        assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/X.java", String.join("\n",
+            "String alias = \"UPDATE data_submission s SET status = 'x' WHERE s.id = :id\";",
+            "String only = \"update only outbox set status = 'x'\";",
+            "String merge = \"MERGE INTO team t USING feed.submission f ON t.id = f.team_id \"",
+            "    + \"WHEN MATCHED THEN DO NOTHING\";")))
+            .as("UPDATE with an alias, UPDATE ONLY, and MERGE ... USING")
+            .containsExactly(
+                "org/nmcpye/datarun/submission/feed/X.java: system-of-record table data_submission outside its seam",
+                "org/nmcpye/datarun/submission/feed/X.java: transitional table outbox (new code uses "
+                    + "outbox.processing)",
+                "org/nmcpye/datarun/submission/feed/X.java: system-of-record table team outside its seam");
+        assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/X.java",
+            "log.warn(\"Delete from team {} refused\", id);"))
+            .as("a known false positive: prose shaped like a query")
+            .containsExactly(
+                "org/nmcpye/datarun/submission/feed/X.java: system-of-record table team outside its seam");
     }
 
     // Fixtures for the tests above.
@@ -784,7 +801,8 @@ class NewCodeSeamsTest {
     private static final String QUOTE = "(?:\\\\?\")?";
     /** A literal with the structure of a query, in any case. */
     private static final Pattern SQL_LIKE = Pattern.compile("(?is)\\bselect\\b.*?\\bfrom\\b|\\binsert\\s+into\\b"
-        + "|\\bupdate\\s+\\S+\\s+set\\b|\\bdelete\\s+from\\b|\\bwith\\s+\\w+\\s+as\\s*\\(");
+        + "|\\bupdate\\s+(?:only\\s+)?\\S+(?:\\s+(?:as\\s+)?\\w+)?\\s+set\\b|\\bdelete\\s+from\\b"
+        + "|\\bmerge\\s+into\\b.*?\\busing\\b|\\bwith\\s+\\w+\\s+as\\s*\\(");
     /** A relation's name, schema-qualified or not, quoted or not. */
     private static final String NAME =
         "(?:only\\s+)?(?:" + QUOTE + "(\\w+)" + QUOTE + "\\s*\\.\\s*)?" + QUOTE + "(\\w+)";
