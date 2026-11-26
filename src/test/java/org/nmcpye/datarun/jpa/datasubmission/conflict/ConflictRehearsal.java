@@ -42,10 +42,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 
@@ -168,6 +171,13 @@ public final class ConflictRehearsal implements AutoCloseable {
         config.setUsername(settings.user());
         config.setPassword(settings.password());
         config.setMaximumPoolSize(settings.threads() + 1);
+        // Each worker holds one connection and the pool has one to spare, so a wait means the database is unreachable:
+        // that submission fails after 5 s rather than Hikari's default 30 s.
+        config.setConnectionTimeout(5_000);
+        // The longest statement the harness allows is pass 3's history read, at 300 s; SESSION cuts the others at 30 s.
+        // A read still waiting at 330 s means the host or the network froze: it then fails, rather than the run hanging
+        // until the test's 12 h limit.
+        config.addDataSourceProperty("socketTimeout", "330");
         config.setConnectionInitSql(SESSION);
         config.setPoolName("conflict-detection-rehearsal");
         config.addDataSourceProperty("ApplicationName", "conflict-detection-rehearsal");
@@ -224,22 +234,38 @@ public final class ConflictRehearsal implements AutoCloseable {
             scopeParameters(), String.class);
         long started = System.nanoTime();
         AtomicLong done = new AtomicLong();
-        inParallel(ids, id -> {
-            readOnly.executeWithoutResult(transaction -> {
-                transaction.setRollbackOnly();
-                reSendUnchanged(id);
+        FailureStreak streak = new FailureStreak();
+        boolean finished = false;
+        try {
+            inParallel(ids, settings.threads(), streak, id -> {
+                // As in pass 2, one submission's failure is counted and the pass goes on; the report then says not
+                // met. Twenty in a row stop the pass.
+                RuntimeException failed = null;
+                try {
+                    readOnly.executeWithoutResult(transaction -> {
+                        transaction.setRollbackOnly();
+                        reSendUnchanged(id);
+                    });
+                } catch (RuntimeException failure) {
+                    unchanged.add("failed: " + FailureShape.of(failure));
+                    failed = failure;
+                }
+                long count = done.incrementAndGet();
+                if (count % 5_000 == 0) {
+                    line("re-sent " + count + " of " + ids.size() + " submissions so far");
+                }
+                streak.after(failed);
             });
-            long count = done.incrementAndGet();
-            if (count % 5_000 == 0) {
-                line("re-sent " + count + " of " + ids.size() + " submissions so far");
-            }
-        });
-        line("pass 1, every submission re-sent unchanged: " + ids.size() + " submissions in "
-            + seconds(started) + " s");
-        holders.sorted().forEach((key, count) -> line("  copy holder " + key + ": " + count));
-        unchanged.sorted().forEach((key, count) -> line("  " + key + ": " + count));
-        line("  expected: kept aside 0 for live submissions, whoever holds the copy, failed 0; met: "
-            + (unchangedConflicts() == 0 && unchangedFailures() == 0 ? "yes" : "no"));
+            finished = true;
+        } finally {
+            // Printed even when the pass stopped, so what it counted reaches the report.
+            line("pass 1, every submission re-sent unchanged: " + extent(finished, done.get(), ids.size()) + " in "
+                + seconds(started) + " s");
+            holders.sorted().forEach((key, count) -> line("  copy holder " + key + ": " + count));
+            unchanged.sorted().forEach((key, count) -> line("  " + key + ": " + count));
+            line("  expected: kept aside 0 for live submissions, whoever holds the copy, failed 0; met: "
+                + (finished && unchangedConflicts() == 0 && unchangedFailures() == 0 ? "yes" : "no"));
+        }
     }
 
     /**
@@ -299,22 +325,35 @@ public final class ConflictRehearsal implements AutoCloseable {
             kinds.put(ids.get(i), SEEDED_KINDS.get(i % SEEDED_KINDS.size()));
         }
         Tally sampleHolders = new Tally();
-        inParallel(ids, id -> {
-            String kind = kinds.get(id);
-            try {
-                readWrite.executeWithoutResult(transaction -> {
-                    transaction.setRollbackOnly();
-                    changeOne(id, kind, sampleHolders);
-                });
-            } catch (RuntimeException failure) {
-                changed.add(kind + ", failed: " + FailureShape.of(failure));
-            }
-        });
-        line("pass 2, a changed copy after a seeded server-side change: " + ids.size() + " submissions in "
-            + seconds(started) + " s");
-        sampleHolders.sorted().forEach((key, count) -> line("  copy holder " + key + ": " + count));
-        changed.sorted().forEach((key, count) -> line("  " + key + ": " + count));
-        line("  expected: every rehearsed copy kept aside; met: " + (changedNotKeptAside() == 0 ? "yes" : "no"));
+        AtomicLong done = new AtomicLong();
+        FailureStreak streak = new FailureStreak();
+        boolean finished = false;
+        try {
+            inParallel(ids, settings.threads(), streak, id -> {
+                String kind = kinds.get(id);
+                RuntimeException failed = null;
+                try {
+                    readWrite.executeWithoutResult(transaction -> {
+                        transaction.setRollbackOnly();
+                        changeOne(id, kind, sampleHolders);
+                    });
+                } catch (RuntimeException failure) {
+                    changed.add(kind + ", failed: " + FailureShape.of(failure));
+                    failed = failure;
+                }
+                done.incrementAndGet();
+                streak.after(failed);
+            });
+            finished = true;
+        } finally {
+            // Printed even when the pass stopped, so what it counted reaches the report.
+            line("pass 2, a changed copy after a seeded server-side change: " + extent(finished, done.get(), ids.size())
+                + " in " + seconds(started) + " s");
+            sampleHolders.sorted().forEach((key, count) -> line("  copy holder " + key + ": " + count));
+            changed.sorted().forEach((key, count) -> line("  " + key + ": " + count));
+            line("  expected: every rehearsed copy kept aside; met: "
+                + (finished && changedNotKeptAside() == 0 ? "yes" : "no"));
+        }
     }
 
     /**
@@ -879,27 +918,90 @@ public final class ConflictRehearsal implements AutoCloseable {
         return new MapSqlParameterSource("scope", settings.scope());
     }
 
-    private void inParallel(List<String> ids, Consumer<String> work) {
-        ExecutorService pool = Executors.newFixedThreadPool(settings.threads());
+    /**
+     * Runs the work for each id on the given number of workers, and waits for every one of them. A worker checks the
+     * streak before each id and stops quietly once the pass has stopped; a worker that fails outright stops the pass.
+     * When the pass stopped, this throws the first failure that stopped it, after every worker has finished, so the
+     * counts printed after it are final. If the calling thread is interrupted instead, as at the test's time limit, it
+     * stops the workers without waiting for them.
+     */
+    static void inParallel(List<String> ids, int threads, FailureStreak streak, Consumer<String> work) {
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
         try {
             List<Future<?>> parts = new ArrayList<>();
-            int threads = settings.threads();
             for (int t = 0; t < threads; t++) {
                 int part = t;
                 parts.add(pool.submit(() -> {
-                    for (int i = part; i < ids.size(); i += threads) {
-                        work.accept(ids.get(i));
+                    try {
+                        for (int i = part; i < ids.size() && !streak.stopped(); i += threads) {
+                            work.accept(ids.get(i));
+                        }
+                    } catch (Throwable failure) {
+                        streak.stop(failure);
+                        throw failure;
                     }
                 }));
             }
             for (Future<?> part : parts) {
-                part.get();
+                try {
+                    part.get();
+                } catch (ExecutionException failed) {
+                    // The worker kept its failure in the streak; the first one kept is thrown below.
+                }
             }
-        } catch (Exception e) {
-            throw new IllegalStateException("A rehearsal worker failed: " + FailureShape.of(e), e);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            streak.stop(interrupted);
         } finally {
             pool.shutdownNow();
         }
+        streak.failure().ifPresent(failure -> {
+            throw new IllegalStateException("A rehearsal worker failed: " + FailureShape.of(failure), failure);
+        });
+    }
+
+    /**
+     * Whether a pass has stopped, and why. A success resets the count of failures in a row; the failure that brings it to
+     * {@link #LIMIT} stops the pass, since the database or the harness is then failing for every submission and
+     * counting each one would spend hours. A pass also stops when a worker fails outright. A stopped pass stays
+     * stopped, and keeps the first failure that stopped it.
+     */
+    static final class FailureStreak {
+        static final int LIMIT = 20;
+        private final AtomicInteger inARow = new AtomicInteger();
+        private final AtomicReference<Throwable> first = new AtomicReference<>();
+
+        /** Whether the pass has stopped; a stopped pass takes no more submissions. */
+        boolean stopped() {
+            return first.get() != null;
+        }
+
+        /** Stops the pass, keeping the failure that stopped it unless an earlier one already did. */
+        void stop(Throwable failure) {
+            first.compareAndSet(null, failure);
+        }
+
+        /** The failure that stopped the pass, if it stopped. */
+        Optional<Throwable> failure() {
+            return Optional.ofNullable(first.get());
+        }
+
+        /** After each submission, with its failure or null: the twentieth failure in a row stops the pass. */
+        void after(RuntimeException failure) {
+            if (failure == null) {
+                inARow.set(0);
+            } else if (inARow.incrementAndGet() >= LIMIT) {
+                IllegalStateException inARowStop =
+                    new IllegalStateException(LIMIT + " submissions failed in a row, so the pass stops", failure);
+                stop(inARowStop);
+                throw inARowStop;
+            }
+        }
+    }
+
+    /** How much of a pass ran: all of it, or how far it got before it stopped. */
+    private static String extent(boolean finished, long done, int total) {
+        return finished ? total + " submissions" : "stopped after " + done + " of " + total + " submissions";
     }
 
     private static ActivationSwitches switchedOn() {
